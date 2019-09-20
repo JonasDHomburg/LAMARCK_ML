@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+message ShapeProto {
+    message Dim {
+        int64 size = 1;
+        string name = 2;
+    };
+    repeated Dim dim = 1;
+}

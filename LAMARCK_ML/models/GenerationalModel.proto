@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/individuals/Individual.proto";
+import "LAMARCK_ML/reproduction/Ancestry.proto";
+
+message GenerationalModelProto {
+    message ReproductionPoolProto {
+        repeated IndividualProto individuals = 1;
+    }
+    message ReproductionProto {
+        string method = 1;
+        repeated AncestryProto ancestry = 2;
+    }
+    repeated IndividualProto generation = 1;
+    repeated IndividualProto selection = 2;
+    repeated ReproductionProto reproduction = 3;
+    repeated ReproductionPoolProto reproduction_pools = 4;
+    int64 generation_idx = 5;
+    int32 state = 6;
+}

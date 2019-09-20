@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/data_util/Shape.proto";
+import "LAMARCK_ML/data_util/DType.proto";
+import "LAMARCK_ML/data_util/TypeShape.proto";
+
+message AttributeProto {
+    message Value {
+        oneof v {
+            bool bool_val = 10;
+            string string_val = 11;
+            bytes bytes_val = 12;
+            int64 int_val = 13;
+            double double_val = 14;
+            ShapeProto shape_val = 15;
+            DTypeProto type_val = 16;
+            TypeShapeProto nts_val = 17;
+            List list_val = 18;
+            List set_val = 19;
+            List tuple_val = 20;
+            Dict dict_val = 21;
+        }
+    }
+    message List {
+        repeated Value v = 1;
+        bool numpy = 2;
+    }
+    message Dict {
+        repeated AttributeProto vs = 1;
+    }
+
+    string name = 1;
+    Value v = 10;
+}

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/data_util/Attribute.proto";
+import "LAMARCK_ML/architectures/functions/Function.proto";
+import "LAMARCK_ML/architectures/IOMapping.proto";
+import "LAMARCK_ML/architectures/variables/Variable.proto";
+
+message NeuralNetworkProto {
+    string id_name = 1;
+
+    repeated string function_cls = 3;
+    AttributeProto.Dict output_ntss = 4;
+    repeated IOMappingProto input_mapping = 5;
+    repeated IOMappingProto output_mapping = 6;
+
+    repeated FunctionProto functions = 10;
+    repeated VariableProto variables = 11;
+
+    repeated AttributeProto attr = 15;
+};

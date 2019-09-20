@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+enum TypeProto {
+    DInvalid = 0;
+
+    DBinary = 10;
+    DUInt = 11;
+    DInt = 12;
+    DFloat = 13;
+    DComplex = 14;
+
+    DBool = 20;
+    DString = 21;
+}
+
+message DTypeProto {
+    TypeProto type_val = 1;
+    int32 bits_val = 2;
+}

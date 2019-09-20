@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/data_util/DType.proto";
+import "LAMARCK_ML/data_util/Shape.proto";
+import "LAMARCK_ML/data_util/Attribute.proto";
+
+message VariableProto {
+    message InitializerProto {
+        string cls_name = 1;
+        repeated AttributeProto attr = 2;
+    }
+    message RegularisationProto {
+        string cls_name = 1;
+        repeated AttributeProto attr = 2;
+    }
+
+    DTypeProto dtype = 1;
+    ShapeProto shape = 2;
+    bool trainable = 3;
+    string name = 4;
+
+    InitializerProto initializer = 7;
+    RegularisationProto regularisation = 8;
+
+    repeated bytes bytes_val = 10;
+    repeated int32 half_val = 11;
+    repeated float float_val = 12;
+    repeated double double_val = 13;
+    repeated int32 int_val = 14;
+    repeated string string_val = 15;
+    repeated float scomplex_val = 16;
+    repeated int64 int64_val = 17;
+    repeated bool bool_val = 18;
+    repeated double dcomplex_val = 19;
+    repeated uint32 uint32_val = 20;
+    repeated uint64 uint64_val = 21;
+
+}

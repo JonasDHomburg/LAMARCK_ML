@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+message IOMappingProto {
+    string in_label = 1;
+    string out_label = 2;
+    string df_id_name = 3;
+}

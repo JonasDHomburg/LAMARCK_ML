@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+message AncestryProto {
+    string method = 1;
+    string descendant = 2;
+    repeated string ancestors = 3;
+}
