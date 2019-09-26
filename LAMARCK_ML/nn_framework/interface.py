@@ -13,7 +13,7 @@ class NeuralNetworkFrameworkInterface():
   def setup_individual(self, individual):
     raise NotImplementedError()
 
-  def teardown_individual(self):
+  def reset_framework(self):
     raise NotImplementedError()
 
   pass

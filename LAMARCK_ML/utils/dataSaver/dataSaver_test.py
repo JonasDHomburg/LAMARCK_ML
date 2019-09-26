@@ -9,7 +9,7 @@ from LAMARCK_ML.reproduction import Mutation, Recombination, AncestryEntity
 from LAMARCK_ML.utils.dataSaver.dbSqlite3 import DSSqlite3
 
 
-@unittest.skipIf((os.environ.get('test_fast', False) in {'True','true', '1'}), 'time consuming')
+@unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestDBSqlite3(unittest.TestCase):
   class dummyModel(GenerationalModel):
     def __init__(self, **kwargs):
@@ -35,20 +35,15 @@ class TestDBSqlite3(unittest.TestCase):
 
     def mut(self):
       mut = Mutation()
-      rec = Recombination()
-      self._REPRODUCTION = [(rec, [AncestryEntity(rec.ID, self.ci.id_name, [self.anc1.id_name, self.anc2.id_name])]),
-                            (mut, [AncestryEntity(mut.ID, self.anc1.id_name, [self.ci.id_name]),
+      self._REPRODUCTION = [(mut, [AncestryEntity(mut.ID, self.anc1.id_name, [self.ci.id_name]),
                                    AncestryEntity(mut.ID, self.anc2.id_name, [self.ci.id_name])])]
 
     def rec(self):
-      mut = Mutation()
       rec = Recombination()
-      self._REPRODUCTION = [(mut, [AncestryEntity(mut.ID, self.anc1.id_name, [self.ci.id_name]),
-                                   AncestryEntity(mut.ID, self.anc2.id_name, [self.ci.id_name])]),
-                            (rec, [AncestryEntity(rec.ID, self.ci.id_name, [self.anc1.id_name, self.anc2.id_name])])]
+      self._REPRODUCTION = [(rec, [AncestryEntity(rec.ID, self.ci.id_name, [self.anc1.id_name, self.anc2.id_name])])]
 
   def test_db_generation(self):
-    db_file = './test.db3'
+    db_file = './test_db_gen.db3'
     ds = DSSqlite3(**{
       DSSqlite3.arg_FILE: db_file,
     })
@@ -65,16 +60,16 @@ class TestDBSqlite3(unittest.TestCase):
     os.remove(db_file)
 
   def test_db_ancestry_mut(self):
-    db_file = './test.db3'
+    db_file = './test_db_anc_mut.db3'
     ds = DSSqlite3(**{
       DSSqlite3.arg_FILE: db_file,
     })
     dummyM = TestDBSqlite3.dummyModel()
-    setattr(dummyM, '_end_reproduction_step', types.MethodType(ds.end_reproduction_step(
-      getattr(dummyM, '_end_reproduction_step')), dummyM))
+    setattr(dummyM, '_end_reproduce', types.MethodType(ds.end_reproduce(
+      getattr(dummyM, '_end_reproduce')), dummyM))
 
     dummyM.mut()
-    dummyM._end_reproduction_step()
+    dummyM._end_reproduce()
     anc_ent = ds.get_ancestry_for_ind(dummyM.anc1.id_name)
     self.assertEqual(anc_ent.method, Mutation.ID)
     self.assertEqual(anc_ent.descendant, dummyM.anc1.id_name)
@@ -89,19 +84,20 @@ class TestDBSqlite3(unittest.TestCase):
     os.remove(db_file)
 
   def test_db_ancestry_rec(self):
-    db_file = './test.db3'
+    db_file = './test_db_anc_rec.db3'
     ds = DSSqlite3(**{
       DSSqlite3.arg_FILE: db_file,
     })
     dummyM = TestDBSqlite3.dummyModel()
-    setattr(dummyM, '_end_reproduction_step', types.MethodType(ds.end_reproduction_step(
-      getattr(dummyM, '_end_reproduction_step')), dummyM))
+    setattr(dummyM, '_end_reproduce', types.MethodType(ds.end_reproduce(
+      getattr(dummyM, '_end_reproduce')), dummyM))
 
     dummyM.rec()
-    dummyM._end_reproduction_step()
+    dummyM._end_reproduce()
     self.assertIsNone(ds.get_ancestry_for_ind(dummyM.anc1.id_name))
     self.assertIsNone(ds.get_ancestry_for_ind(dummyM.anc2.id_name))
     anc_ent = ds.get_ancestry_for_ind(dummyM.ci.id_name)
+    self.assertIsNotNone(anc_ent)
     self.assertEqual(anc_ent.method, Recombination.ID)
     self.assertEqual(anc_ent.descendant, dummyM.ci.id_name)
     self.assertListEqual(anc_ent.ancestors, [dummyM.anc1.id_name, dummyM.anc2.id_name])

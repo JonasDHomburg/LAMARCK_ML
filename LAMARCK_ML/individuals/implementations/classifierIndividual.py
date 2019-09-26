@@ -72,14 +72,23 @@ class ClassifierIndividual(IndividualInterface, Mutation.Interface, Recombinatio
   def mutate(self, prob):
     result = ClassifierIndividual.__new__(ClassifierIndividual)
     pb = self.get_pb()
-    new_networks = [network.mutate(prob)[0] for network in self._networks]
-    pb.ClearField("networks")
-    pb.networks.extend([network.get_pb() for network in new_networks])
     result.__setstate__(pb)
+    result.network = self.network.mutate(prob=prob)[0]
+    result._networks = [result.network]
+    result._id_name = self.getNewName()
     return [result]
 
   def recombine(self, other):
-    pass
+    result = ClassifierIndividual.__new__(ClassifierIndividual)
+    pb = self.get_pb()
+    result.__setstate__(pb)
+    result.network = self.network.recombine(other.network)[0]
+    result._networks = [result.network]
+    result._id_name = self.getNewName()
+    return [result]
 
   def norm(self, other):
     return self.network.norm(other.network)
+
+  def update_state(self, *args, **kwargs):
+    self.network.update_state(*args, **kwargs)

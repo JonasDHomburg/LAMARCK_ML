@@ -309,3 +309,5 @@ pyvenv.cfg
 pip-selfcheck.json
 
 # End of https://www.gitignore.io/api/git,python,pycharm,virtualenv,pycharm+all,jupyternotebook,jupyternotebooks
+
+*_experimental.*

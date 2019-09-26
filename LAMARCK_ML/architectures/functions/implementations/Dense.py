@@ -96,7 +96,6 @@ class Dense(Function, Mutation.Interface):
       return [], []
     input_nts_id, inputs_outputs, _ = input_dict[IOLabel.DENSE_IN]
     in_nts = inputs_outputs[input_nts_id]
-    # in_nts = [nts for nts in inputs_outputs if nts.id_name == input_nts_id][0]
     out_label, out_nts = next(iter(expected_outputs.items()))
     if in_nts.dtype != out_nts.dtype:
       return [], []
@@ -128,7 +127,13 @@ class Dense(Function, Mutation.Interface):
     _reg = [NoRegularisation()]
     _amount = len(_init) * len(_reg)
     _prob = 1 / 2 / _amount if amount_ > 0 else 1 / _amount
-    return ([{**_dict, **{cls.arg_VARIABLES: [k, b]}} for k in possibleKernels for b in possibleBias] +
+    return ([{**_dict, **{cls.arg_VARIABLES: [k, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
+                                                          Variable.arg_TRAINABLE: True,
+                                                          Variable.arg_NAME: cls.__name__ + '|bias',
+                                                          Variable.arg_SHAPE: (outUnits,),
+                                                          Variable.arg_INITIALIZER: init_,
+                                                          Variable.arg_REGULARISATION: reg_
+                                                             })]}} for k in possibleKernels] +
             [{**_dict, **{cls.arg_VARIABLES: [b, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
                                                              Variable.arg_TRAINABLE: True,
                                                              Variable.arg_NAME: cls.__name__ + '|kernel',

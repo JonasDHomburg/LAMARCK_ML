@@ -32,7 +32,6 @@ class TestFunction(unittest.TestCase):
     classes = [Function]
     names = []
     for c in classes:
-      names.append(c.__name__)
       for i in range(random.randint(1, 10)):
         obj = c(variables=[self.randomVariable() for _ in range(random.randint(1, 3))], input_mapping={}, dtype=DDouble)
         names.append(obj._name)

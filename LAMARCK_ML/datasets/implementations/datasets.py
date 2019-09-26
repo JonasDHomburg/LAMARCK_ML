@@ -17,6 +17,8 @@ class SupervisedData(DatasetInterface):
   arg_TRAINY = 'train_Y'
   arg_TESTX = 'test_X'
   arg_TESTY = 'test_Y'
+  arg_VALIDX = 'valid_X'
+  arg_VALIDY = 'valid_Y'
   arg_SHAPES = 'typeShapes'
   _DF_INPUTS = None
 
@@ -30,6 +32,8 @@ class SupervisedData(DatasetInterface):
     self.train_Y = kwargs.get(self.arg_TRAINY)
     self.test_X = kwargs.get(self.arg_TESTX)
     self.test_Y = kwargs.get(self.arg_TESTY)
+    self.valid_X = kwargs.get(self.arg_VALIDX)
+    self.valid_Y = kwargs.get(self.arg_VALIDY)
     self.idx = 0
     self.len = 1
     self.data_X = self.test_X
@@ -84,7 +88,6 @@ class UncorrelatedSupervised(SupervisedData):
     return {IOLabel.DATA: data_X, IOLabel.TARGET: data_Y}
 
   def get_pb(self, result=None):
-    # TODO: rework
     if not isinstance(result, DatasetProto):
       result = DatasetProto()
     result = super(UncorrelatedSupervised, self).get_pb(result)
@@ -92,6 +95,8 @@ class UncorrelatedSupervised(SupervisedData):
     if self.train_Y is not None: result.attr_val.append(attr2pb('train_Y', self.train_Y))
     if self.test_X is not None: result.attr_val.append(attr2pb('test_X', self.test_X))
     if self.test_Y is not None: result.attr_val.append(attr2pb('test_Y', self.test_Y))
+    if self.valid_X is not None: result.attr_val.append(attr2pb('valid_X', self.valid_X))
+    if self.valid_Y is not None: result.attr_val.append(attr2pb('valid_Y', self.valid_Y))
     result.attr_val.append(attr2pb('len', self.len))
     result.attr_val.append(attr2pb('idx', self.idx))
     result.attr_val.append(attr2pb('state', self.state))
@@ -102,6 +107,8 @@ class UncorrelatedSupervised(SupervisedData):
     self.train_Y = [arr for arr in attr.get('train_Y')] if 'train_Y' in attr else None
     self.test_X = [arr for arr in attr.get('test_X')] if 'test_X' in attr else None
     self.test_Y = [arr for arr in attr.get('test_Y')] if 'test_Y' in attr else None
+    self.valid_X = [arr for arr in attr.get('valid_X')] if 'valid_X' in attr else None
+    self.valid_Y = [arr for arr in attr.get('valid_Y')] if 'valid_Y' in attr else None
     self.idx = attr.get('idx')
     self.state = attr.get('state')
     self.len = attr.get('len')

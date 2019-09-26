@@ -14,6 +14,7 @@ class ModelStateSaverLoader(ModellUtil):
   arg_NEA_DONE = 'nea_done'
 
   def __init__(self, **kwargs):
+    super(ModelStateSaverLoader, self).__init__(**kwargs)
     self.file = kwargs.get(self.arg_FILE, './model_state.pb')
     if kwargs.get(self.arg_PREPARATION, False):
       setattr(self, 'end_prepare', types.MethodType(ModelStateSaverLoader._end_prepare, self))
@@ -38,7 +39,7 @@ class ModelStateSaverLoader(ModellUtil):
       with open(self.file, 'rb') as f:
         model.setstate_from_pb(f.read())
 
-  def end_prepare(self, func):
+  def _end_prepare(self, func):
     def wrapper(model):
       self.load_model(model)
       func()

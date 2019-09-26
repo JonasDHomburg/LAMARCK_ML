@@ -52,7 +52,6 @@ class Variable(ProtoSerializable):
   def get_pb(self, result=None):
     if not isinstance(result, VariableProto):
       result = VariableProto()
-    # result.dtype = self.dtype.pb
     self.dtype.get_pb(result.dtype)
     result.trainable = self.trainable
     result.name = self.name
@@ -61,7 +60,8 @@ class Variable(ProtoSerializable):
       _dim.size = dim
       result.shape.dim.append(_dim)
     if self.value is not None:
-      result.__getattribute__(self.dtype.attr).extend(self.value.flat)
+      _shape = self.value.shape
+      result.__getattribute__(self.dtype.attr).extend([v for v in self.value.reshape(-1).tolist()])
     if self.initializer is not None:
       self.initializer.get_pb(result.initializer)
     if self.regularisation is not None:

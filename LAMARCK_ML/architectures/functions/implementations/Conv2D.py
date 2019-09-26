@@ -29,7 +29,7 @@ class Conv2D(Function, Mutation.Interface):
   IOLabel.CONV2D_OUT = 'DATA_OUT'
 
   class Padding(Enum):
-    SAME = 'SAME',
+    SAME = 'SAME'
     VALID = 'VALID'
 
   allowedTypes = [DFloat, DDouble, DHalf, DInt8, DInt16, DInt32, DInt64]
@@ -224,9 +224,7 @@ class Conv2D(Function, Mutation.Interface):
                                      Variable.arg_TRAINABLE: True,
                                      Variable.arg_NAME: cls.__name__ + '|bias',
                                      Variable.arg_SHAPE: (
-                                       out_nts.shape[DimNames.HEIGHT],
-                                       out_nts.shape[DimNames.WIDTH],
-                                       out_nts.shape[DimNames.CHANNEL]),
+                                       out_nts.shape[DimNames.CHANNEL],),
                                      Variable.arg_INITIALIZER: GlorotUniform(),
                                      Variable.arg_REGULARISATION: NoRegularisation()
                                    })
@@ -250,17 +248,13 @@ class Conv2D(Function, Mutation.Interface):
                                                       Variable.arg_TRAINABLE: True,
                                                       Variable.arg_NAME: cls.__name__ + '|bias',
                                                       Variable.arg_SHAPE: (
-                                                        out_nts.shape[DimNames.HEIGHT],
-                                                        out_nts.shape[DimNames.WIDTH],
                                                         out_nts.shape[DimNames.CHANNEL]),
                                                       Variable.arg_INITIALIZER: GlorotUniform(),
                                                       Variable.arg_REGULARISATION: NoRegularisation()
                                                     })
                                                     ]})
       possibleBias = [v for v in variable_pool.get(cls.__name__ + '|bias', [])
-                      if v.shape == (out_nts.shape[DimNames.HEIGHT],
-                                     out_nts.shape[DimNames.WIDTH],
-                                     out_nts.shape[DimNames.CHANNEL])]
+                      if v.shape == (out_nts.shape[DimNames.CHANNEL],)]
       for bias in possibleBias:
         result_with_var.append({cls.arg_ATTRIBUTES: {**config,
                                                      **{cls.arg_OUT_NAMED_TYPE_SHAPES: {out_label: out_nts},
@@ -327,6 +321,7 @@ class Conv2D(Function, Mutation.Interface):
 
     result = Conv2D.__new__(Conv2D)
     result.__setstate__(self.get_pb())
+
     if random() < .8:
       functions = [resetVariable, keepTraining]
       if variable_pool is not None:

@@ -1,4 +1,6 @@
 import numpy as np
+from datetime import datetime
+from random import randint, seed
 
 from LAMARCK_ML.architectures import NeuralNetwork
 from LAMARCK_ML.architectures.losses import LossInterface
@@ -7,6 +9,7 @@ from LAMARCK_ML.data_util.attribute import pb2attr, attr2pb
 from LAMARCK_ML.data_util.typeShape import TypeShape
 from LAMARCK_ML.individuals.Individual_pb2 import IndividualProto
 
+seed()
 
 class IndividualInterface(ProtoSerializable):
   arg_NEURAL_NETWORKS = 'neuralNetworks'  # TODO: change to more general Architecture
@@ -15,7 +18,7 @@ class IndividualInterface(ProtoSerializable):
   arg_LOSSES = 'losses'
   arg_NAME = 'name'
 
-  _nameIdx = 0
+  # _nameIdx = 0
 
   def __init__(self, **kwargs):
     self.metrics = dict()
@@ -50,8 +53,9 @@ class IndividualInterface(ProtoSerializable):
 
   @classmethod
   def getNewName(cls):
-    name = cls.__name__ + ':%09i' % (cls._nameIdx)
-    cls._nameIdx += 1
+    # name = cls.__name__ + ':%09i' % (cls._nameIdx)
+    # cls._nameIdx += 1
+    name = cls.__name__ + '_' + str(datetime.now().timestamp()) + '_%09i'%randint(0, 1e9-1)
     return name
 
   @property
@@ -154,5 +158,8 @@ class IndividualInterface(ProtoSerializable):
     result = IndividualInterface.__new__(IndividualInterface)
     result.__setstate__(state)
     return result
+
+  def update_state(self, *args, **kwargs):
+    raise NotImplementedError()
 
   pass

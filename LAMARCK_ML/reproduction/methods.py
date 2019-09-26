@@ -1,5 +1,7 @@
 from LAMARCK_ML.reproduction.ancestry import AncestryEntity
 
+from random import sample
+
 
 class MethodInterface():
   ID = 'INVALID'
@@ -19,10 +21,12 @@ class Mutation(MethodInterface):
 
   arg_P = 'p'
   arg_DESCENDANTS = 'descendants'
+  arg_LIMIT = 'limit'
 
   def __init__(self, **kwargs):
     self.p = kwargs.get(self.arg_P, .05)
     self.descendants = kwargs.get(self.arg_DESCENDANTS, 1)
+    self.limit = kwargs.get(self.arg_LIMIT)
 
   def reproduce(self, pool):
     new_pool = list()
@@ -32,6 +36,9 @@ class Mutation(MethodInterface):
         for new_ind in ind.mutate(self.p):
           log.append(AncestryEntity(self.ID, new_ind.id_name, [ind.id_name]))
           new_pool.append(new_ind)
+    if self.limit is not None:
+      comb = list(zip(new_pool, log))
+      new_pool, log = zip(*sample(comb, k=min(len(comb), self.limit)))
     return new_pool, log
 
 
@@ -43,9 +50,11 @@ class Recombination(MethodInterface):
       raise NotImplementedError()
 
   arg_DESCENDANTS = 'descendants'
+  arg_LIMIT = 'limit'
 
   def __init__(self, **kwargs):
     self.descendants = kwargs.get(self.arg_DESCENDANTS, 2)
+    self.limit = kwargs.get(self.arg_LIMIT)
 
   def reproduce(self, pool):
     mating_pairs = [(pool[anc1], pool[anc2])
@@ -58,4 +67,7 @@ class Recombination(MethodInterface):
           log.append(AncestryEntity(self.ID, new_ind.id_name, [anc1.id_name, anc2.id_name]))
           new_pool.append(new_ind)
         anc1, anc2 = anc2, anc1
+    if self.limit is not None:
+      comb = list(zip(new_pool, log))
+      new_pool, log = zip(*sample(comb, k=min(len(comb), self.limit)))
     return new_pool, log

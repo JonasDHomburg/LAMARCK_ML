@@ -43,4 +43,5 @@ class ModelInterface(ProtoSerializable):
 
 
 class ModellUtil(object):
-  pass
+  def __init__(self, **kwargs):
+    super(ModellUtil, self).__init__()

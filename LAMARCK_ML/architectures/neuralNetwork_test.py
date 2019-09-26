@@ -9,7 +9,7 @@ import networkx as nx
 import time
 
 
-@unittest.skipIf((os.environ.get('test_fast', False) in {'True','true', '1'}), 'time consuming')
+@unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestNeuralNetwork(unittest.TestCase):
   def test_instantiation_USD_outputTypeShapes(self):
     batch = 3
@@ -23,7 +23,7 @@ class TestNeuralNetwork(unittest.TestCase):
       NeuralNetwork.arg_OUTPUT_TARGETS: {'out0': TypeShape(DFloat, outShape)}})
 
   def test_instantiation_USD_ONTS_Dense_Merge(self):
-    for i in range(100):
+    for i in range(10):
       batch = 1
       _data = TypeShape(DFloat, Shape((DimNames.BATCH, batch), (DimNames.UNITS, 20)))
 
@@ -53,7 +53,7 @@ class TestNeuralNetwork(unittest.TestCase):
       NN_state.__setstate__(state)
       self.assertIsNot(NN, NN_state)
 
-      NN_mut = NN.mutate(100)[0]
+      NN_mut = NN.mutate(1)[0]
       self.assertEqual(pb, NN.get_pb())
       self.assertIsNot(NN, NN_mut)
       self.assertNotEqual(NN, NN_mut)
@@ -77,7 +77,7 @@ class TestNeuralNetwork(unittest.TestCase):
           stack.extend([f_id for _, f_id in f_.inputs.values()])
       self.assertSetEqual(required_ids, set(f_ids.keys()))
 
-      NN_mut = NN.mutate(100)[0]
+      NN_mut = NN.mutate(1)[0]
       self.assertEqual(pb, NN.get_pb())
       self.assertIsNot(NN, NN_mut)
       self.assertNotEqual(NN, NN_mut)
@@ -99,8 +99,6 @@ class TestNeuralNetwork(unittest.TestCase):
         f_ = f_ids.get(f_id)
         if f_ is not None:
           stack.extend([f_id for _, f_id in f_.inputs.values()])
-      if len(required_ids) > len(f_ids):
-        print('Unused Functions!', required_ids.difference(f_ids.keys()), set(f_ids.keys()).difference(required_ids))
       self.assertSetEqual(required_ids, set(f_ids.keys()))
 
       NN_mut = NN.mutate(0)[0]
@@ -190,6 +188,25 @@ class TestNeuralNetwork(unittest.TestCase):
       pb = NN.get_pb()
       state = NN.__getstate__()
 
+      f_ids = dict([(_id, None) for _, _id in NN.inputs.values()])
+      for _f in NN.functions:
+        f_ids[_f.id_name] = _f
+
+      for _f in NN.functions:
+        for _f_input, (other_output, other_id) in _f.inputs.items():
+          if other_id not in f_ids:
+            self.assertTrue(False)
+
+      stack = [f_id for _, f_id in NN.output_mapping.values()]
+      required_ids = set()
+      while stack:
+        f_id = stack.pop()
+        required_ids.add(f_id)
+        f_ = f_ids.get(f_id)
+        if f_ is not None:
+          stack.extend([f_id for _, f_id in f_.inputs.values()])
+      self.assertSetEqual(required_ids, set(f_ids.keys()))
+
       NN_pb = NeuralNetwork.__new__(NeuralNetwork)
       NN_pb.__setstate__(pb)
       self.assertIsNot(NN, NN_pb)
@@ -250,7 +267,16 @@ class TestNeuralNetwork(unittest.TestCase):
         if f_ is not None:
           stack.extend([f_id for _, f_id in f_.inputs.values()])
       self.assertSetEqual(required_ids, set(f_ids.keys()))
-      # print(i)
+      for f in NN_rec.functions:
+        if f.__class__ != Dense:
+          continue
+        kernel = [v for v in f.variables if v.name.endswith('|kernel')][0]
+        label, f_id = f.inputs['DATA_IN']
+        _f = f_ids[f_id]
+        if _f is not None:
+          self.assertEqual(kernel.shape,
+                           (_f.outputs[label].shape[DimNames.UNITS],
+                            f.attr[f.arg_OUT_NAMED_TYPE_SHAPES]['DATA_OUT'].shape[DimNames.UNITS]))
 
   @unittest.skip('debug')
   def test_reachable(self):

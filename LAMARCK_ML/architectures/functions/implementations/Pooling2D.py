@@ -28,7 +28,7 @@ class Pooling2D(Function, Mutation.Interface):
   IOLabel.POOLING2D_OUT = 'DATA_OUT'
 
   class Padding(Enum):
-    SAME = 'SAME',
+    SAME = 'SAME'
     VALID = 'VALID'
 
   class PoolingType(Enum):
@@ -47,6 +47,7 @@ class Pooling2D(Function, Mutation.Interface):
   arg_IN_WIDTH = 'in_width'
   arg_IN_HEIGHT = 'in_height'
   arg_PADDING = 'padding'
+  arg_POOLING_TYPE = 'pooling_type'
 
   __min_f_hw = .5
   __max_f_hw = 1
@@ -126,24 +127,28 @@ class Pooling2D(Function, Mutation.Interface):
       for s_w in stride_range(w_i, w_o):
         for p_h in range(1, 7):
           for p_w in range(1, 7):
-            configurations.append({
-              cls.arg_POOLING_HEIGHT: p_h,
-              cls.arg_POOLING_WIDTH: p_w,
-              cls.arg_STRIDE_HEIGHT: s_h,
-              cls.arg_STRIDE_WIDTH: s_w,
-              cls.arg_PADDING: Pooling2D.Padding.SAME.value,
-            })
+            for _t in Pooling2D.PoolingType:
+              configurations.append({
+                cls.arg_POOLING_HEIGHT: p_h,
+                cls.arg_POOLING_WIDTH: p_w,
+                cls.arg_STRIDE_HEIGHT: s_h,
+                cls.arg_STRIDE_WIDTH: s_w,
+                cls.arg_PADDING: Pooling2D.Padding.SAME.value,
+                cls.arg_POOLING_TYPE: _t.value,
+              })
     for p_w in pooling_range(w_i, w_o):
       for p_h in pooling_range(h_i, h_o):
         for s_w in stride_range(w_i - p_w + 1, w_o):
           for s_h in stride_range(h_i - p_h + 1, h_o):
-            configurations.append({
-              cls.arg_POOLING_HEIGHT: p_h,
-              cls.arg_POOLING_WIDTH: p_w,
-              cls.arg_STRIDE_HEIGHT: s_h,
-              cls.arg_STRIDE_WIDTH: s_w,
-              cls.arg_PADDING: Pooling2D.Padding.VALID.value,
-            })
+            for _t in Pooling2D.PoolingType:
+              configurations.append({
+                cls.arg_POOLING_HEIGHT: p_h,
+                cls.arg_POOLING_WIDTH: p_w,
+                cls.arg_STRIDE_HEIGHT: s_h,
+                cls.arg_STRIDE_WIDTH: s_w,
+                cls.arg_PADDING: Pooling2D.Padding.VALID.value,
+                cls.arg_POOLING_TYPE: _t.value,
+              })
     return configurations
 
   @classmethod

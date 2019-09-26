@@ -1,7 +1,7 @@
 import unittest
 import os
 
-os.environ['test_fast'] = '0'
+os.environ['test_fast'] = '1'
 
 from LAMARCK_ML.architectures.functions.functions_test import \
   TestFunction, \

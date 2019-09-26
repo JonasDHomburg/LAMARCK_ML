@@ -1,4 +1,6 @@
-from typing import Tuple, List, Dict, Set
+from typing import Tuple, List, Dict
+from random import randint
+from datetime import datetime
 
 from LAMARCK_ML.architectures import DataFlow
 from LAMARCK_ML.architectures.IOMapping_pb2 import IOMappingProto
@@ -76,11 +78,12 @@ class Function(DataFlow):
   @classmethod
   def getNewName(cls, obj=None) -> str:
     # assert obj is not None and isinstance(obj, Function)
-    cls_name = cls.__name__
-    idx = Function.usedNames.get(cls_name, 0)
-    name = cls_name + ":%09i" % (idx)
-    idx += 1
-    Function.usedNames[cls_name] = idx
+    # cls_name = cls.__name__
+    # idx = Function.usedNames.get(cls_name, 0)
+    # name = cls_name + ":%09i" % (idx)
+    # idx += 1
+    # Function.usedNames[cls_name] = idx
+    name = cls.__name__ + '_' + str(datetime.now().timestamp()) + '_%09i' % randint(0, 1e9 - 1)
     if obj is not None and isinstance(obj, Function):
       Function.usedNames[name] = obj
     return name

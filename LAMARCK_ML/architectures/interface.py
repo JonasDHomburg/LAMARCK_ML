@@ -18,4 +18,7 @@ class ArchitectureInterface():
   def norm(self, other):
     raise NotImplementedError()
 
+  def update_state(self, *args, **kwargs):
+    raise NotImplementedError()
+
   pass

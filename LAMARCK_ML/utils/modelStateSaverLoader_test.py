@@ -37,9 +37,7 @@ class TestModelStateSaverLoader(unittest.TestCase):
   class TestEvaluationhelper(EvaluationHelperInterface):
     def evaluate(self, generation, metrics):
       for individual in generation:
-        # individual.set_up_eval()
         individual.metrics = dict([(m.ID, m.evaluate(self=m, individual=individual, framework=None)) for m in metrics])
-        # individual.tear_down_eval()
 
   class TestSelect(SelectionStrategyInterface):
     def select(self, pool):
@@ -81,11 +79,12 @@ class TestModelStateSaverLoader(unittest.TestCase):
     self.replace = self.TestReplace()
     self.init_strat = self.TestInitialization()
     self.stopper = self.TestStopper()
-    self.state_file = './debug.pb'
+    self.state_file = 'debug.pb'
     self.stateSaver = ModelStateSaverLoader(**{
       ModelStateSaverLoader.arg_FILE: self.state_file,
       ModelStateSaverLoader.arg_EVALUATION: True,
       ModelStateSaverLoader.arg_REPLACEMENT: True,
+      ModelStateSaverLoader.arg_PREPARATION: True,
     })
 
   def tearDown(self) -> None:
@@ -95,6 +94,8 @@ class TestModelStateSaverLoader(unittest.TestCase):
     del self.reproduce
     del self.model
     del self.stateSaver
+
+    os.remove(self.state_file)
 
   def test_state(self):
     self.model.add([self.TestMetric,
@@ -116,5 +117,3 @@ class TestModelStateSaverLoader(unittest.TestCase):
     self.assertEqual(self.model.generation_idx, 100)
     self.model.run()
     self.assertEqual(self.model.generation_idx, 200)
-
-    os.remove(self.state_file)

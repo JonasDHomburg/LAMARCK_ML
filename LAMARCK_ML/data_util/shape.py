@@ -82,11 +82,11 @@ class Shape(object):
       return str(self.name.value) + ': ' + str(self.size)
 
     def __eq__(self, other):
-      if not isinstance(other, self.__class__) or \
-          not self.size == other.size or \
-          not self.name == other.name:
-        return False
-      return True
+      if isinstance(other, self.__class__) and \
+          self.size == other.size and \
+          self.name == other.name:
+        return True
+      return False
 
     def __hash__(self):
       return hash(int.from_bytes(self.name.value.encode('utf-8'), byteorder='big') * 13 + hash(self.size))
@@ -144,7 +144,7 @@ class Shape(object):
   def __eq__(self, other):
     if isinstance(other, self.__class__) and \
         len(self.dim) == len(other.dim) and \
-        not any([not _self == _other for _self, _other in zip(self.dim, other.dim)]):
+        all([_self == _other for _self, _other in zip(self.dim, other.dim)]):
       return True
     return False
 

@@ -17,4 +17,4 @@ class LocalEH(EvaluationHelperInterface):
       self._framework.setup_individual(individual)
       individual.metrics = dict([(m.ID, m.evaluate(self=m, individual=individual, framework=self._framework))
                                  for m in metrics])
-      self._framework.teardown_individual()
+      self._framework.reset_framework()

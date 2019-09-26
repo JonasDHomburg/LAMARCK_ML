@@ -5,7 +5,7 @@ from LAMARCK_ML.architectures.variables.initializer import *
 from LAMARCK_ML.architectures.variables.regularisation import *
 from LAMARCK_ML.data_util import DimNames, IOLabel
 from LAMARCK_ML.data_util.dataType import *
-from LAMARCK_ML.individuals import ClassifierIndividual
+from LAMARCK_ML.individuals import IndividualInterface
 from LAMARCK_ML.metrics import Accuracy, FlOps, Parameters, TimeMetric, MemoryMetric
 from LAMARCK_ML.nn_framework import NeuralNetworkFrameworkInterface
 from LAMARCK_ML.architectures.functions import *
@@ -28,6 +28,8 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
                        MemoryMetric.Interface):
   arg_SESSION_CFG = 'session_cfg'
   arg_BATCH_SIZE = 'batch_size'
+  arg_TMP_FILE = 'tmp_file'
+  arg_EPOCHS = 'epochs'
 
   mapping_dtype = {
     DHalf: tf.float16,
@@ -70,15 +72,23 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
     super(NVIDIATensorFlow, self).__init__(**kwargs)
     self._sess_cfg = kwargs.get(self.arg_SESSION_CFG)
     self.batch_size = kwargs.get(self.arg_BATCH_SIZE, 32)
+    self.tmp_file = kwargs.get(self.arg_TMP_FILE, 'state.ckpt')
+    self.epochs = kwargs.get(self.arg_EPOCHS, 10)
 
     self._memory = None
     self._time = None
+    self._flops = None
+    self._parameters = None
 
-  def setup_individual(self, individual: ClassifierIndividual):
+  def setup_individual(self, individual: IndividualInterface):
     self._memory = None
     self._time = None
+    self._flops = None
+    self._parameters = None
+
     self.sess = tf.compat.v1.Session(config=self._sess_cfg)
     K.set_session(self.sess)
+    id2tfTensor = dict()
     id2tfObj = dict()
     self.inputs = list()
     for ds in self.data_sets:
@@ -90,7 +100,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
         name = ds.id_name + '_' + output_id_name
         dtype = self.mapping_dtype.get(output.dtype)
         tfObj = tf.keras.Input(shape=shape, batch_size=batch_size, name=name, dtype=dtype)
-        id2tfObj[ds.id_name] = {**id2tfObj.get(ds.id_name, dict()), **{output_id_name: tfObj}}
+        id2tfTensor[ds.id_name] = {**id2tfTensor.get(ds.id_name, dict()), **{output_id_name: tfObj}}
         self.inputs.append(tfObj)
 
     functionStack = []
@@ -102,7 +112,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
       all_found = True
       func_inputs = dict()
       for _input, out_mapping in _func.inputs.items():
-        out_dict = id2tfObj.get(out_mapping[1])
+        out_dict = id2tfTensor.get(out_mapping[1])
         if out_dict is None or out_dict.get(out_mapping[0]) is None:
           all_found = False
           break
@@ -110,18 +120,17 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
       if not all_found:
         functionStack.append(_func)
         continue
-      id2tfObj[_func.id_name] = getattr(self, _func.__class__.__name__ + '__')(_func, **func_inputs)
+      id2tfTensor[_func.id_name], id2tfObj[_func.id_name] = \
+        getattr(self, _func.__class__.__name__ + '__')(_func, **func_inputs)
 
     self.outputs = list()
     for label, id_name in individual.network.output_mapping.values():
-      out_dict = id2tfObj.get(id_name)
+      out_dict = id2tfTensor.get(id_name)
       if out_dict is not None and out_dict.get(label) is not None:
         tfObj = out_dict.get(label)
         tfObj = tf.keras.layers.Softmax()(tfObj)
         self.outputs.append(tfObj)
 
-    # print(self.inputs)
-    # print(self.outputs)
     self.model = tf.keras.Model(inputs=self.inputs, outputs=self.outputs)
     self.model.compile(
       optimizer=tf.keras.optimizers.Adam(),
@@ -129,16 +138,40 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
       metrics=['accuracy']
     )
     self.data_sets[0]('train')
-    # print('data_X', self.data_sets[0].data_X)
-    # print('data_Y', self.data_sets[0].data_Y)
-    self.model.fit(self.data_sets[0].data_X, self.data_sets[0].data_Y,
-                   batch_size=self.batch_size,
-                   epochs=20,
-                   verbose=0)
+    valid_exists = self.data_sets[0].valid_X is not None and self.data_sets[0].valid_Y is not None
+    self.model.fit(**{'x': self.data_sets[0].data_X,
+                      'y': self.data_sets[0].data_Y,
+                      'batch_size': self.batch_size,
+                      'validation_data': (self.data_sets[0].valid_X,
+                                          self.data_sets[0].valid_Y)
+                      if valid_exists else None,
+                      'epochs': self.epochs,
+                      'verbose': 0,
+                      'callbacks': [tf.keras.callbacks.ModelCheckpoint(save_weights_only=True,
+                                                                       save_best_only=True,
+                                                                       filepath=self.tmp_file,
+                                                                       verbose=0),
+                                    tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=3)
+                                    ] if valid_exists else None,
+                      })
+    if valid_exists:
+      self.model.load_weights(self.tmp_file)
 
-  def teardown_individual(self):
+    functionStack = []
+    for network in individual._networks:
+      functionStack.extend(network.functions)
+    state = dict()
+    for f in functionStack:
+      tfObj, v_names = id2tfObj[f.id_name]
+      state[f.id_name] = dict([(name, value) for name, value in zip(v_names, tfObj.get_weights())])
+
+    individual.update_state(**state)
+
+  def reset_framework(self):
     self._memory = None
     self._time = None
+    self._flops = None
+    self._parameters = None
     del self.model
     K.clear_session()
     tf.compat.v1.reset_default_graph()
@@ -195,7 +228,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
 
     kernel_reg = self.mapping_regularizer.get(kernel.regularisation.__class__)
     bias_reg = self.mapping_regularizer.get(bias.regularisation.__class__)
-    tfObj = C_Dense(units=units, activation=None, use_bias=True,
+    tfObj = C_Dense(units=units, activation=tf.keras.activations.relu, use_bias=True,
                     kernel_initializer=kernel_init,
                     bias_initializer=bias_init,
                     kernel_regularizer=kernel_reg() if kernel_reg is not None else None,
@@ -207,7 +240,8 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
     outNTS = next(iter(func.outputs))
     func_input = next(iter(kwargs.values()))
     # TODO: only working with units not images
-    return {outNTS: tfObj(func_input)}
+    tmp = tfObj(func_input)
+    return {outNTS: tmp}, (tfObj, ['Dense|kernel' if 'kernel' in v.name else 'Dense|bias' for v in tfObj.variables])
 
   def Merge__(self, func, **kwargs):
     first = kwargs.get(Merge._DF_INPUTS[0])
@@ -217,7 +251,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
     tfObj = tf.keras.layers.Concatenate(axis=axis,
                                         name=func.id_name.replace(':', '_'),
                                         )
-    return {outNTS_id: tfObj([first, second])}
+    return {outNTS_id: tfObj([first, second])}, (tfObj, list())
 
   def Conv2D__(self, func, **kwargs):
     class C_Conv2D(tf.keras.layers.Conv2D):
@@ -298,11 +332,47 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
                                    bias_initializer=bias_init,
                                    kernel_regularizer=kernel_reg,
                                    bias_regularizer=bias_reg,
+                                   activation=tf.keras.activations.relu,
                                    )
 
     outNTS = next(iter(func.outputs))
     func_input = next(iter(kwargs.values()))
-    return {outNTS.id_name: tfObj(func_input)}
+    tmp = tfObj(func_input)
+    return {outNTS: tmp}, (tfObj, ['Conv2D|kernel' if 'kernel' in v.name else 'Conv2D|bias' for v in tfObj.variables])
+
+  def Pooling2D__(self, func, **kwargs):
+    class C_MinPooling2D(tf.keras.layers.MaxPooling2D):
+
+      # def __init__(self, pool_size=(2, 2), strides=None,
+      #              padding='valid', data_format=None, **kwargs):
+      #   super(tf.keras.layers.MaxPooling2D, self).__init__(pool_size=pool_size, strides=strides, padding=padding,
+      #                                      data_format=data_format, **kwargs)
+
+      def pooling_function(inputs, pool_size, strides, padding, data_format):
+        return -K.pool2d(-inputs, pool_size, strides, padding, data_format,
+                         pool_mode='max')
+
+    type2tfObj = {
+      Pooling2D.PoolingType.MIN.value: C_MinPooling2D,
+      Pooling2D.PoolingType.MAX.value: tf.keras.layers.MaxPooling2D,
+      Pooling2D.PoolingType.MEAN.value: tf.keras.layers.AveragePooling2D,
+    }
+    tfObj = type2tfObj.get(func.attr.get(Pooling2D.arg_POOLING_TYPE))(
+      pool_size=(func.attr.get(Pooling2D.arg_POOLING_HEIGHT),
+                 func.attr.get(Pooling2D.arg_POOLING_WIDTH)),
+      strides=(func.attr.get(Pooling2D.arg_STRIDE_HEIGHT),
+               func.attr.get(Pooling2D.arg_STRIDE_WIDTH)),
+      padding=func.attr.get(Pooling2D.arg_PADDING),
+    )
+    outNTS = next(iter(func.outputs))
+    func_input = next(iter(kwargs.values()))
+    return {outNTS: tfObj(func_input)}, (tfObj, list())
+
+  def Flatten__(self, func, **kwargs):
+    tfObj = tf.keras.layers.Flatten()
+    outNTS = next(iter(func.outputs))
+    func_inputs = next(iter(kwargs.values()))
+    return {outNTS: tfObj(func_inputs)}, (tfObj, list())
 
   def _time_memory_flops_params(self):
     self.data_sets[0].batch = 1
@@ -324,30 +394,30 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
   def time(self):
     if self._time is None:
       self._time_memory_flops_params()
-    return self._time
+    return float(self._time)
 
   def memory(self):
     if self._memory is None:
       self._time_memory_flops_params()
-    return self._memory
+    return float(self._memory)
 
   def accuracy(self):
     for ds in self.data_sets:
-      ds('train')
+      ds('test')
     _, acc = self.model.evaluate(self.data_sets[0].data_X,
                                  self.data_sets[0].data_Y,
                                  batch_size=self.batch_size,
                                  verbose=0)
-    return acc
+    return float(acc)
 
   def flops_per_sample(self):
     if self._flops is None:
       self._time_memory_flops_params()
-    return self._flops
+    return float(self._flops)
 
   def parameters(self):
     if self._parameters is None:
       self._time_memory_flops_params()
-    return self._parameters
+    return float(self._parameters)
 
   pass

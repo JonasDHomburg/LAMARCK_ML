@@ -86,8 +86,4 @@ class DatasetInterface(DataFlow):
   def inputs(self):
     return {}
 
-  # @property
-  # def inputLabels(self):
-  #   return {}
-
   pass

@@ -173,9 +173,6 @@ class TournamentSelection(SortingBasedSelection):
     return "ToS"
 
   def select(self, pool):
-    # result = [max(np.random.choice(pool, self._St, replace=False).tolist(), key=lambda x: x.fitness)
-    #           for _ in range(self._limit)]
-
     result = [max([sortingClass(obj=obj,
                                 cmp=self.cmp) for obj in np.random.choice(pool, self._St, replace=False).tolist()]).obj
               for _ in range(self._limit)]
@@ -200,7 +197,6 @@ class TruncationSelection(SortingBasedSelection):
     return "TrS"
 
   def select(self, pool):
-    # sorted_pool = sorted(pool, key=lambda x: x.fitness, reverse=True)[:self._u]
     sorted_pool = [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
     if isinstance(self._u, int):
       sorted_pool = sorted_pool[:self._u]
