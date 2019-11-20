@@ -1,5 +1,5 @@
 from LAMARCK_ML.models import ModellUtil, NEADone
-from LAMARCK_ML.individuals import sortingClass
+from LAMARCK_ML.utils import SortingClass
 
 
 class StopByGenerationIndex(ModellUtil):
@@ -22,20 +22,27 @@ class StopByNoProgress(ModellUtil):
   arg_PATIENCE = 'patience'
   arg_CMP = 'cmp'
 
+  class MetricContainer():
+    pass
+
   def __init__(self, **kwargs):
     super(StopByNoProgress, self).__init__(**kwargs)
     self.patience = kwargs.get(self.arg_PATIENCE, 5)
     self.cmp = kwargs.get(self.arg_CMP)
     self.best_ind_sc = None
+    self.best_ind_metrics = None
     self.waiting = 0
 
   def end_evaluate(self, func):
     def wrapper(model):
-      new_best_ind_sc = max([sortingClass(obj=ind, cmp=self.cmp) for ind in model.generation])
-      if (self.best_ind_sc is None or
-          new_best_ind_sc > self.best_ind_sc):
+      # new_best_ind_sc = StopByNoProgress.MetricContainer()
+      new_best_ind_sc = max([SortingClass(obj=ind, cmp=self.cmp) for ind in model.generation])
+      new_best_metrics = dict(new_best_ind_sc.obj.metrics)
+      if (self.best_ind_sc is None or (self.cmp is not None and self.cmp(new_best_metrics, self.best_ind_metrics)) or
+         new_best_ind_sc > self.best_ind_sc):
         self.waiting = 0
         self.best_ind_sc = new_best_ind_sc
+        self.best_ind_metrics = new_best_metrics
       else:
         self.waiting += 1
       if self.waiting > self.patience:

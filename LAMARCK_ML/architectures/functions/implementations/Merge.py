@@ -11,9 +11,12 @@ from LAMARCK_ML.data_util import DimNames, TypeShape, Shape, IOLabel, \
   DInt32, \
   DInt16, \
   DInt8
+from LAMARCK_ML.metrics.implementations import Parameters, FlOps
 
 
-class Merge(Function):
+class Merge(Function,
+            FlOps.Interface,
+            Parameters.Interface):
   # IOLabel.MERGE_OTHER = 'MERGE_OTHER'
   IOLabel.MERGE_OTHER = 'DATA_SECOND'
   # IOLabel.MERGE_IN = 'MERGE_IN'
@@ -173,3 +176,9 @@ class Merge(Function):
       else:
         return None
     return result
+
+  def flops_per_sample(self):
+    return 0
+
+  def parameters(self):
+    return 0

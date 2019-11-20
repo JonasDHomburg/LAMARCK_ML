@@ -18,6 +18,9 @@ class TestReplacementSchemes(unittest.TestCase):
     def __init__(self):
       self._fitness = random.random()
       self._random_loc = random.random() * 1e2
+      self._id_name = self.getNewName()
+      self.metrics = dict()
+      self.attr = dict()
 
     def __sub__(self, other):
       return abs(self._random_loc - other._random_loc)

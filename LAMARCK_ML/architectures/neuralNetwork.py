@@ -13,7 +13,7 @@ from LAMARCK_ML.architectures.functions import Function, InvalidFunctionType
 from LAMARCK_ML.architectures.interface import ArchitectureInterface
 from LAMARCK_ML.architectures.variables import Variable
 from LAMARCK_ML.data_util import TypeShape, IOLabel
-from LAMARCK_ML.data_util.attribute import attr2pb, pb2attr
+from LAMARCK_ML.data_util.attribute import attr2pb, pb2attr, value2pb, pb2val
 from LAMARCK_ML.reproduction.methods import Mutation, Recombination
 
 
@@ -105,7 +105,8 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
       return
     self._id_name = _nn.id_name
     self.function_cls = [Function.getClassByName(f_cls) for f_cls in _nn.function_cls]
-    self.output_targets = dict([(elem.name, TypeShape.from_pb(elem.v.nts_val)) for elem in _nn.output_ntss.vs])
+    # self.output_targets = dict([(elem.name, TypeShape.from_pb(elem.v.nts_val)) for elem in _nn.output_ntss.vs])
+    self.output_targets = dict([pb2val(v) for v in _nn.output_ntss.v])
     self._inputs = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.input_mapping])
     self._DF_INPUTS = set(self._inputs.keys())
     self.output_mapping = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.output_mapping])
@@ -500,7 +501,8 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
     for f_cls in self.function_cls:
       result.function_cls.append(f_cls.get_cls_name())
 
-    result.output_ntss.vs.extend([attr2pb(name=label, value=ts) for label, ts in self.output_targets.items()])
+    # result.output_ntss.vs.extend([attr2pb(name=label, value=ts) for label, ts in self.output_targets.items()])
+    result.output_ntss.v.extend([value2pb(v) for v in self.output_targets.items()])
     for in_label, (out_label, id_name) in self._inputs.items():
       ioM = IOMappingProto()
       ioM.in_label = in_label
@@ -799,7 +801,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
         shuffle(required_input_keys)
         connect = list()
         try:
-          for d in range(o_depth, 0, -1):
+          for d in range(min(o_depth, depth-1), 0, -1):
             other_new_depth = d
             shuffle(o_depth2id[d])
             for out_nts_label, out_nts, _id in [(nts_label, nts, f_id) for f_id in o_depth2id[d] for nts_label, nts in

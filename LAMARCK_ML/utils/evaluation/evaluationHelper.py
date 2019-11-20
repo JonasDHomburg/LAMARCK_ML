@@ -14,7 +14,19 @@ class LocalEH(EvaluationHelperInterface):
 
   def evaluate(self, generation, metrics):
     for individual in generation:
-      self._framework.setup_individual(individual)
-      individual.metrics = dict([(m.ID, m.evaluate(self=m, individual=individual, framework=self._framework))
+      state = self._framework.setup_individual(individual)
+      individual.metrics = dict([(m.ID, m.evaluate(individual=individual, framework=self._framework))
                                  for m in metrics])
+      individual.update_state(**state)
       self._framework.reset_framework()
+
+
+class GraphLayoutEH(EvaluationHelperInterface):
+
+  def __init__(self, **kwargs):
+    super(GraphLayoutEH, self).__init__(**kwargs)
+
+  def evaluate(self, generation, metrics):
+    for individual in generation:
+      individual.metrics = dict([(m.ID, m.evaluate(individual=individual, framework=None))
+                                 for m in metrics])

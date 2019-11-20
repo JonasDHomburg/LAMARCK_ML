@@ -11,6 +11,7 @@ import time
 
 @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestNeuralNetwork(unittest.TestCase):
+  IOLabel.DATA = 'DATA'
   def test_instantiation_USD_outputTypeShapes(self):
     batch = 3
     _data = TypeShape(DFloat, Shape((DimNames.BATCH, batch),
@@ -118,7 +119,7 @@ class TestNeuralNetwork(unittest.TestCase):
       outputs = {'out0': _target}
       IOLabel.DS = 'DS'
       inputs = {IOLabel.DS: (IOLabel.DATA, _data, 'Dataset')}
-      functions = [Conv2D, Pooling2D, Flatten]
+      functions = [QConv2D, QPooling2D, Flatten]
       NN1 = NeuralNetwork(**{NeuralNetwork.arg_INPUTS: inputs,
                              NeuralNetwork.arg_OUTPUT_TARGETS: outputs,
                              NeuralNetwork.arg_FUNCTIONS: functions})

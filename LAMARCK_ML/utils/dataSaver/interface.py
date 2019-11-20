@@ -10,3 +10,9 @@ class DataSaverInterface(ModellUtil):
 
   def get_ancestry_for_ind(self, ind_name):
     raise NotImplementedError()
+
+  def get_ancestries(self):
+    raise NotImplementedError()
+
+  def get_individual_names(self):
+    raise NotImplementedError()

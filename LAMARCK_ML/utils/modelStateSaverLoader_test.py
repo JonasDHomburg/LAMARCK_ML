@@ -10,7 +10,7 @@ from LAMARCK_ML.replacement.interface import ReplacementSchemeInterface
 from LAMARCK_ML.reproduction import AncestryEntity
 from LAMARCK_ML.reproduction.methods import MethodInterface
 from LAMARCK_ML.selection.interface import SelectionStrategyInterface
-from LAMARCK_ML.utils import ModelStateSaverLoader
+from LAMARCK_ML.utils.modelStateSaverLoader import ModelStateSaverLoader
 from LAMARCK_ML.utils.evaluation.interface import EvaluationHelperInterface
 
 
@@ -37,7 +37,7 @@ class TestModelStateSaverLoader(unittest.TestCase):
   class TestEvaluationhelper(EvaluationHelperInterface):
     def evaluate(self, generation, metrics):
       for individual in generation:
-        individual.metrics = dict([(m.ID, m.evaluate(self=m, individual=individual, framework=None)) for m in metrics])
+        individual.metrics = dict([(m.ID, m.evaluate(individual=individual, framework=None)) for m in metrics])
 
   class TestSelect(SelectionStrategyInterface):
     def select(self, pool):
@@ -79,7 +79,7 @@ class TestModelStateSaverLoader(unittest.TestCase):
     self.replace = self.TestReplace()
     self.init_strat = self.TestInitialization()
     self.stopper = self.TestStopper()
-    self.state_file = 'debug.pb'
+    self.state_file = './debug.pb'
     self.stateSaver = ModelStateSaverLoader(**{
       ModelStateSaverLoader.arg_FILE: self.state_file,
       ModelStateSaverLoader.arg_EVALUATION: True,
@@ -98,7 +98,7 @@ class TestModelStateSaverLoader(unittest.TestCase):
     os.remove(self.state_file)
 
   def test_state(self):
-    self.model.add([self.TestMetric,
+    self.model.add([self.TestMetric(),
                     self.select,
                     self.reproduce,
                     self.replace,

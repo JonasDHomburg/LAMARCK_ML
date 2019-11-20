@@ -20,7 +20,7 @@ message AttributeProto {
             List list_val = 18;
             List set_val = 19;
             List tuple_val = 20;
-            Dict dict_val = 21;
+            List dict_val = 21;
         }
     }
     message List {
@@ -28,7 +28,7 @@ message AttributeProto {
         bool numpy = 2;
     }
     message Dict {
-        repeated AttributeProto vs = 1;
+        repeated Value v = 1;
     }
 
     string name = 1;

@@ -1,11 +1,11 @@
 import random
-from unittest import TestCase
+import unittest
 
 from LAMARCK_ML.architectures.variables.regularisation import Regularisation
 from LAMARCK_ML.data_util import Shape, DimNames as DN, DDouble
 
 
-class TestRegularisation(TestCase):
+class TestRegularisation(unittest.TestCase):
   def subclassTest(self, cls):
     obj = cls()
     pb = obj.get_pb()

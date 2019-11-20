@@ -3,18 +3,18 @@ from LAMARCK_ML.architectures.losses import Reduce, LossInterface
 from LAMARCK_ML.architectures.losses import SoftmaxCrossEntropyWithLogits, MeanSquaredError
 from LAMARCK_ML.architectures.neuralNetwork import NeuralNetwork
 from LAMARCK_ML.data_util import IOLabel, DimNames
-from LAMARCK_ML.individuals.interface import IndividualInterface
+from LAMARCK_ML.individuals.implementations.networkIndividualInterface import NetworkIndividualInterface
 from LAMARCK_ML.reproduction.methods import Mutation, Recombination
 
 
-class ClassifierIndividual(IndividualInterface, Mutation.Interface, Recombination.Interface):
+class ClassifierIndividualACDG(NetworkIndividualInterface, Mutation.Interface, Recombination.Interface):
   arg_MAX_NN_DEPTH = 'max_depth'
   arg_MIN_NN_DEPTH = 'min_depth'
   arg_MAX_NN_BRANCH = 'max_branch'
   arg_NN_FUNCTIONS = 'functions'
 
   def __init__(self, **kwargs):
-    super(ClassifierIndividual, self).__init__(**kwargs)
+    super(ClassifierIndividualACDG, self).__init__(**kwargs)
     if len(self._networks) > 1:
       raise Exception('Expected 1 or 0 networks got: ' + str(len(self._networks)))
     elif len(self._networks) == 1:
@@ -48,7 +48,7 @@ class ClassifierIndividual(IndividualInterface, Mutation.Interface, Recombinatio
     self._losses.append(self.loss)
 
   def _cls_setstate(self, _individual):
-    super(ClassifierIndividual, self)._cls_setstate(_individual)
+    super(ClassifierIndividualACDG, self)._cls_setstate(_individual)
 
     if len(self._networks) != 1:
       raise Exception('Restored individual has an invalid number of networks: ' + str(len(self._networks)))
@@ -58,19 +58,15 @@ class ClassifierIndividual(IndividualInterface, Mutation.Interface, Recombinatio
     self.loss = self._losses[0]
 
   def __eq__(self, other):
-    if (isinstance(other, self.__class__)
-        and self._id_name == other._id_name
+    if (super(ClassifierIndividualACDG, self).__eq__(other)
         and self.loss == other.loss
         and self.network == other.network
-        and self.metrics == other.metrics
-        and len(self.attr) == len(other.attr) == len(
-          [value == other.attr(key) for key, value in self.attr.items()])
     ):
       return True
     return False
 
   def mutate(self, prob):
-    result = ClassifierIndividual.__new__(ClassifierIndividual)
+    result = ClassifierIndividualACDG.__new__(ClassifierIndividualACDG)
     pb = self.get_pb()
     result.__setstate__(pb)
     result.network = self.network.mutate(prob=prob)[0]
@@ -79,7 +75,7 @@ class ClassifierIndividual(IndividualInterface, Mutation.Interface, Recombinatio
     return [result]
 
   def recombine(self, other):
-    result = ClassifierIndividual.__new__(ClassifierIndividual)
+    result = ClassifierIndividualACDG.__new__(ClassifierIndividualACDG)
     pb = self.get_pb()
     result.__setstate__(pb)
     result.network = self.network.recombine(other.network)[0]

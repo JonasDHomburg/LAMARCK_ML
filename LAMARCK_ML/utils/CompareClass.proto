@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/data_util/Attribute.proto";
+
+message CompareClassProto {
+    repeated AttributeProto attr = 1;
+}

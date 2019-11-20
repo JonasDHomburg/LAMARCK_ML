@@ -1,6 +1,6 @@
 import numpy as np
 
-from LAMARCK_ML.individuals import sortingClass
+from LAMARCK_ML.utils.sortingClass import SortingClass
 from LAMARCK_ML.replacement.interface import ReplacementSchemeInterface
 from LAMARCK_ML.reproduction.methods import Mutation
 
@@ -35,7 +35,7 @@ class NElitism(SortingBasedReplacement):
   arg_N = 'n'
 
   def __init__(self, **kwargs):
-    super(NElitism, self).__init__()
+    super(NElitism, self).__init__(**kwargs)
     self.__n = kwargs.get(self.arg_N, 1)
 
   def __str__(self):
@@ -43,7 +43,7 @@ class NElitism(SortingBasedReplacement):
 
   def new_generation(self, prev_gen, descendants):
     return descendants[-1] + \
-           [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:self.__n]
+           [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:self.__n]
 
 
 class NWeakElitism(SortingBasedReplacement):
@@ -70,7 +70,7 @@ class NWeakElitism(SortingBasedReplacement):
             and all([isinstance(ind, Mutation.Interface) for ind in descendants[-1]])):
       raise Exception('At least one individual cannot be mutated')
     return descendants[-1] + [ind.mutate(self.__p) for ind in [sc.obj for sc in sorted(
-      [sortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:self.__n]]
+      [SortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:self.__n]]
 
 
 class DeleteNLast(SortingBasedReplacement):
@@ -87,7 +87,7 @@ class DeleteNLast(SortingBasedReplacement):
     return 'DNL n=%i' % self.__n
 
   def new_generation(self, prev_gen, descendants):
-    return [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:-self.__n] + \
+    return [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in prev_gen], reverse=True)][:-self.__n] + \
            np.random.choice(descendants[-1], self.__n, replace=False).tolist()
 
 

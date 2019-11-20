@@ -51,13 +51,14 @@ class Function(DataFlow):
 
   @staticmethod
   def getClassByName(class_name: str):
-    names = class_name.split('-')
-    if Mutation.Interface.__name__ in names:
-      names.remove(Mutation.Interface.__name__)
-    if Recombination.Interface.__name__ in names:
-      names.remove(Recombination.Interface.__name__)
-    if ProtoSerializable.__name__ in names:
-      names.remove(ProtoSerializable.__name__)
+    blacklist = {'Interface', ProtoSerializable.__name__}
+    names = [_n_ for _n_ in class_name.split('-') if _n_ not in blacklist]
+    # if Mutation.Interface.__name__ in names:
+    #   names.remove(Mutation.Interface.__name__)
+    # if Recombination.Interface.__name__ in names:
+    #   names.remove(Recombination.Interface.__name__)
+    # if ProtoSerializable.__name__ in names:
+    #   names.remove(ProtoSerializable.__name__)
     if not (len(names) > 2 and names[-2] == Function.__name__ and names[-1] == DataFlow.__name__):
       raise InvalidFunctionClass()
     current_cls = Function
@@ -133,7 +134,7 @@ class Function(DataFlow):
     result = self.__class__.__new__(self.__class__)
     result._name = self._name
     result.input_mapping = dict(self.input_mapping)
-    result.variables = list(self.variables)
+    result.variables = [v.__copy__() for v in self.variables]
     result.attr = dict([pb2attr(attr2pb(key, value)) for key, value in self.attr.items()])
     return result
 
@@ -146,13 +147,13 @@ class Function(DataFlow):
     self.attr = dict([pb2attr(attr) for attr in _function.attr])
 
   def __eq__(self, other):
-    if (isinstance(other, self.__class__) and
-        self._name == other._name and
-        self.variables == other.variables and
-        len({k: self.attr.get(k) for k in self.attr if self.attr.get(k) == other.attr.get(k)})
-        == len(self.attr) == len(other.attr) and
-        len({i: self.input_mapping.get(i) for i in self.input_mapping if
-             self.input_mapping.get(i) == other.input_mapping.get(i)})
+    if (isinstance(other, self.__class__)
+        and self._name == other._name
+        and self.variables == other.variables
+        and len({k: self.attr.get(k) for k in self.attr if self.attr.get(k) == other.attr.get(k)})
+        == len(self.attr) == len(other.attr)
+        and len({i: self.input_mapping.get(i) for i in self.input_mapping if
+                 self.input_mapping.get(i) == other.input_mapping.get(i)})
         == len(self.input_mapping) == len(other.input_mapping)
     ):
       return True

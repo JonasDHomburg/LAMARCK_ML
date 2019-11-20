@@ -3,5 +3,8 @@ from .implementations import Accuracy, \
   NodesInNetwork, \
   TimeMetric, \
   MemoryMetric, \
-  Parameters
+  Parameters, \
+  LayoutCrossingEdges, \
+  LayoutDistanceX, \
+  LayoutDistanceY
 from .interface import MetricInterface

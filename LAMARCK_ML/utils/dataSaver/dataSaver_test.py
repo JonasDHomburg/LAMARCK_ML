@@ -3,7 +3,7 @@ import types
 import unittest
 
 from LAMARCK_ML.data_util import TypeShape, IOLabel, DFloat, Shape, DimNames
-from LAMARCK_ML.individuals import ClassifierIndividual, IndividualInterface
+from LAMARCK_ML.individuals import ClassifierIndividualOPACDG, NetworkIndividualInterface
 from LAMARCK_ML.models.models import GenerationalModel
 from LAMARCK_ML.reproduction import Mutation, Recombination, AncestryEntity
 from LAMARCK_ML.utils.dataSaver.dbSqlite3 import DSSqlite3
@@ -17,17 +17,17 @@ class TestDBSqlite3(unittest.TestCase):
       _data_nts = TypeShape(DFloat, Shape((DimNames.BATCH, 1), (DimNames.UNITS, 20)))
       _target_nts = TypeShape(DFloat, Shape((DimNames.BATCH, 1), (DimNames.UNITS, 10)))
 
-      self.ci = ClassifierIndividual(**{
-        IndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
-                                           IOLabel.TARGET: (_target_nts, 'Dataset')},
+      self.ci = ClassifierIndividualOPACDG(**{
+        NetworkIndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
+                                                  IOLabel.TARGET: (_target_nts, 'Dataset')},
       })
-      self.anc1 = ClassifierIndividual(**{
-        IndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
-                                           IOLabel.TARGET: (_target_nts, 'Dataset')},
+      self.anc1 = ClassifierIndividualOPACDG(**{
+        NetworkIndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
+                                                  IOLabel.TARGET: (_target_nts, 'Dataset')},
       })
-      self.anc2 = ClassifierIndividual(**{
-        IndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
-                                           IOLabel.TARGET: (_target_nts, 'Dataset')},
+      self.anc2 = ClassifierIndividualOPACDG(**{
+        NetworkIndividualInterface.arg_DATA_NTS: {IOLabel.DATA: (_data_nts, 'Dataset'),
+                                                  IOLabel.TARGET: (_target_nts, 'Dataset')},
       })
 
       self._GENERATION = [self.ci]
@@ -70,17 +70,17 @@ class TestDBSqlite3(unittest.TestCase):
 
     dummyM.mut()
     dummyM._end_reproduce()
-    anc_ent = ds.get_ancestry_for_ind(dummyM.anc1.id_name)
+    _, anc_ent = ds.get_ancestry_for_ind(dummyM.anc1.id_name)
     self.assertEqual(anc_ent.method, Mutation.ID)
     self.assertEqual(anc_ent.descendant, dummyM.anc1.id_name)
     self.assertListEqual(anc_ent.ancestors, [dummyM.ci.id_name])
 
-    anc_ent = ds.get_ancestry_for_ind(dummyM.anc2.id_name)
+    _, anc_ent = ds.get_ancestry_for_ind(dummyM.anc2.id_name)
     self.assertEqual(anc_ent.method, Mutation.ID)
     self.assertEqual(anc_ent.descendant, dummyM.anc2.id_name)
     self.assertListEqual(anc_ent.ancestors, [dummyM.ci.id_name])
 
-    self.assertIsNone(ds.get_ancestry_for_ind(dummyM.ci.id_name))
+    self.assertEqual(ds.get_ancestry_for_ind(dummyM.ci.id_name), (None, None))
     os.remove(db_file)
 
   def test_db_ancestry_rec(self):
@@ -94,9 +94,9 @@ class TestDBSqlite3(unittest.TestCase):
 
     dummyM.rec()
     dummyM._end_reproduce()
-    self.assertIsNone(ds.get_ancestry_for_ind(dummyM.anc1.id_name))
-    self.assertIsNone(ds.get_ancestry_for_ind(dummyM.anc2.id_name))
-    anc_ent = ds.get_ancestry_for_ind(dummyM.ci.id_name)
+    self.assertEqual(ds.get_ancestry_for_ind(dummyM.anc1.id_name), (None, None))
+    self.assertEqual(ds.get_ancestry_for_ind(dummyM.anc2.id_name), (None, None))
+    _, anc_ent = ds.get_ancestry_for_ind(dummyM.ci.id_name)
     self.assertIsNotNone(anc_ent)
     self.assertEqual(anc_ent.method, Recombination.ID)
     self.assertEqual(anc_ent.descendant, dummyM.ci.id_name)

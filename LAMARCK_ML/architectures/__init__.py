@@ -1,3 +1,4 @@
-from .dataFlow import DataFlow
-from .interface import ArchitectureInterface
-from .neuralNetwork import NeuralNetwork
+from LAMARCK_ML.architectures.dataFlow import DataFlow
+from LAMARCK_ML.architectures.interface import ArchitectureInterface
+from LAMARCK_ML.architectures.neuralNetwork import NeuralNetwork
+from LAMARCK_ML.architectures.overParameterizedNN import OverParameterizedNeuralNetwork

@@ -116,3 +116,8 @@ body{
 .hidden{
   display: none;
 }
+
+.downloadButton{
+  background-color: #333;
+  color: #ddd;
+}

@@ -125,7 +125,7 @@ class TestGenerationalModel(unittest.TestCase):
   class TestEvaluationhelper(EvaluationHelperInterface):
     def evaluate(self, generation, metrics):
       for individual in generation:
-        individual.metrics = dict([(m.ID, m.evaluate(self=m, individual=individual, framework=None)) for m in metrics])
+        individual.metrics = dict([(m.ID, m.evaluate(individual=individual, framework=None)) for m in metrics])
 
   class TestSelect(SelectionStrategyInterface):
     def select(self, pool):
@@ -226,13 +226,15 @@ class TestGenerationalModel(unittest.TestCase):
 
     with self.assertRaises(NoMetric):
       self.model._prepare_with_defaults()
-    self.assertTrue(self.model.add(self.TestMetric))
-    self.assertEqual(self.model._metrics[0], self.TestMetric)
+    metric = self.TestMetric()
+    self.assertTrue(self.model.add(metric))
+    self.assertTrue(isinstance(self.model._metrics[0], self.TestMetric))
+    self.assertEqual(self.model._metrics[0], metric)
 
-    self.assertTrue(self.model.remove(self.TestMetric))
+    self.assertTrue(self.model.remove(metric))
     with self.assertRaises(NoMetric):
       self.model._prepare_with_defaults()
-    self.assertTrue(self.model.add(self.TestMetric))
+    self.assertTrue(self.model.add(metric))
 
     with self.assertRaises(AttributeError):
       self.model._select()

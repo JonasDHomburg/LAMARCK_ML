@@ -36,12 +36,13 @@ setup(name='LAMARCK_ML',
         'networkx',
         'protobuf',
         'umap-learn',
+        'joblib',
+        'psutil',
       ],
       extras_require={
-        #   'telegram': ['python-telegram-bot'],
+        'telegram': ['python-telegram-bot'],
         'tensorflow-gpu': ['tensorflow-gpu'],
         'tensorfow': ['tensorflow'],
-        'sqlite3': ['sqlite3'],
       },
       zip_safe=False)
 

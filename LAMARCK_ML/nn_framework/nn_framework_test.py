@@ -7,8 +7,8 @@ from sklearn.datasets import make_classification
 
 from LAMARCK_ML.data_util import TypeShape, IOLabel, DFloat, Shape, DimNames
 from LAMARCK_ML.datasets import UncorrelatedSupervised
-from LAMARCK_ML.individuals import ClassifierIndividual
-from LAMARCK_ML.nn_framework import NVIDIATensorFlow
+from LAMARCK_ML.individuals import ClassifierIndividualACDG
+from LAMARCK_ML.nn_framework.nvidia_tensorflow import NVIDIATensorFlow
 from LAMARCK_ML.architectures.functions import *
 
 
@@ -36,10 +36,10 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
                                                  IOLabel.TARGET: TypeShape(DFloat, Shape((DimNames.UNITS, 5)))},
                                      name='Dataset')
 
-    ci = ClassifierIndividual(**{
-      ClassifierIndividual.arg_DATA_NTS: dict(
+    ci = ClassifierIndividualACDG(**{
+      ClassifierIndividualACDG.arg_DATA_NTS: dict(
         [(label, (nts, dataset.id_name)) for label, nts in dataset.outputs.items()]),
-      ClassifierIndividual.arg_NN_FUNCTIONS: [Dense, Merge],
+      ClassifierIndividualACDG.arg_NN_FUNCTIONS: [Dense, Merge],
     })
     NN = ci.network
     f_ids = dict([(_id, None) for _, _id in NN.inputs.values()])
@@ -97,10 +97,10 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
                                                  IOLabel.TARGET: TypeShape(DFloat, Shape((DimNames.UNITS, 5)))},
                                      name='Dataset')
 
-    ci = ClassifierIndividual(**{
-      ClassifierIndividual.arg_DATA_NTS: dict(
+    ci = ClassifierIndividualACDG(**{
+      ClassifierIndividualACDG.arg_DATA_NTS: dict(
         [(label, (nts, dataset.id_name)) for label, nts in dataset.outputs.items()]),
-      ClassifierIndividual.arg_NN_FUNCTIONS: [Dense, Merge],
+      ClassifierIndividualACDG.arg_NN_FUNCTIONS: [Dense, Merge],
     })
     ci = ci.mutate(1)[0]
     NN = ci.network
@@ -162,11 +162,11 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
                                                  IOLabel.TARGET: TypeShape(DFloat, Shape((DimNames.UNITS, 5)))},
                                      name='Dataset')
 
-    ci = ClassifierIndividual(**{
-      ClassifierIndividual.arg_DATA_NTS: dict(
+    ci = ClassifierIndividualACDG(**{
+      ClassifierIndividualACDG.arg_DATA_NTS: dict(
         [(label, (nts, dataset.id_name)) for label, nts in dataset.outputs.items()]),
-      ClassifierIndividual.arg_NN_FUNCTIONS: [Conv2D, Flatten, Dense, Merge],
-      ClassifierIndividual.arg_MAX_NN_DEPTH: 10,
+      ClassifierIndividualACDG.arg_NN_FUNCTIONS: [Conv2D, Flatten, Dense, Merge],
+      ClassifierIndividualACDG.arg_MAX_NN_DEPTH: 10,
     })
 
     framework = NVIDIATensorFlow(**{
@@ -208,11 +208,11 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
                                                  IOLabel.TARGET: TypeShape(DFloat, Shape((DimNames.UNITS, 5)))},
                                      name='Dataset')
 
-    ci = ClassifierIndividual(**{
-      ClassifierIndividual.arg_DATA_NTS: dict(
+    ci = ClassifierIndividualACDG(**{
+      ClassifierIndividualACDG.arg_DATA_NTS: dict(
         [(label, (nts, dataset.id_name)) for label, nts in dataset.outputs.items()]),
-      ClassifierIndividual.arg_NN_FUNCTIONS: [Conv2D, Pooling2D, Flatten, Dense, Merge],
-      ClassifierIndividual.arg_MAX_NN_DEPTH: 10,
+      ClassifierIndividualACDG.arg_NN_FUNCTIONS: [Conv2D, Pooling2D, Flatten, Dense, Merge],
+      ClassifierIndividualACDG.arg_MAX_NN_DEPTH: 10,
     })
     ci = ci.mutate(1)[0]
 
@@ -220,7 +220,8 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       NVIDIATensorFlow.arg_DATA_SETS: [dataset],
     })
 
-    framework.setup_individual(ci)
+    state = framework.setup_individual(ci)
+    ci.update_state(**state)
 
     self.assertTrue(isinstance(framework.accuracy(), float))
     self.assertTrue(isinstance(framework.time(), float))
@@ -232,11 +233,11 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
 
     self.assertGreater(len(ci.network.variable_pool), 0)
 
-    ci2 = ClassifierIndividual(**{
-      ClassifierIndividual.arg_DATA_NTS: dict(
+    ci2 = ClassifierIndividualACDG(**{
+      ClassifierIndividualACDG.arg_DATA_NTS: dict(
         [(label, (nts, dataset.id_name)) for label, nts in dataset.outputs.items()]),
-      ClassifierIndividual.arg_NN_FUNCTIONS: [Conv2D, Pooling2D, Flatten, Dense, Merge],
-      ClassifierIndividual.arg_MAX_NN_DEPTH: 10,
+      ClassifierIndividualACDG.arg_NN_FUNCTIONS: [Conv2D, Pooling2D, Flatten, Dense, Merge],
+      ClassifierIndividualACDG.arg_MAX_NN_DEPTH: 10,
     })
 
     framework.setup_individual(ci)

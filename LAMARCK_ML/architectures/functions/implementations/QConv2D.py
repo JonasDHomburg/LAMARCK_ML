@@ -24,7 +24,7 @@ from LAMARCK_ML.reproduction.methods import Mutation
 from LAMARCK_ML.metrics.implementations import FlOps, Parameters
 
 
-class Conv2D(Function,
+class QConv2D(Function,
              Mutation.Interface,
              FlOps.Interface,
              Parameters.Interface):
@@ -51,18 +51,52 @@ class Conv2D(Function,
   arg_IN_HEIGHT = 'in_height'
   arg_IN_CHANNEL = 'in_channel'
 
-  __min_f_hw = .5
+  __min_f_hw = .1
   __max_f_hw = 1
-  __min_f_c = .5
-  __max_f_c = 1.5
+  __min_f_c = .1
+  __max_f_c = 2.5
 
   @classmethod
   def possible_output_shapes(cls,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 10) -> \
+                             max_possibilities: int = 20) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
+    def valid_config(h_i, h_o, w_i, w_o):
+      def stride_range(in_, out_):
+        if out_ == 1:
+          return [in_]
+        else:
+          lower_limit = math.ceil(in_ / out_)
+          upper_limit = math.ceil(in_ / (out_ - 1)) - 1
+          if lower_limit == 0 or \
+              math.ceil(in_ / lower_limit) < out_ or \
+              upper_limit == 0 or \
+              math.ceil(in_ / upper_limit) > out_:
+            return []
+          return list(range(lower_limit, upper_limit + 1))
+
+      def filter_range(in_, out_):
+        lower_limit = 1
+        upper_limit = in_ - out_ + 1
+        return list(range(lower_limit, upper_limit + 1))
+
+      for s_h in stride_range(h_i, h_o):
+        for s_w in stride_range(w_i, w_o):
+          if s_h != s_w:
+            continue
+          return True
+      for k_w in filter_range(w_i, w_o):
+        for k_h in filter_range(h_i, h_o):
+          if k_w != k_h:
+            continue
+          for s_h in stride_range(h_i - k_h + 1, h_o):
+            for s_w in stride_range(w_i - k_w + 1, w_o):
+              if s_h != s_w:
+                continue
+              return True
+      return False
 
     target_shape = target_output.shape
 
@@ -110,9 +144,11 @@ class Conv2D(Function,
       if invalid_dim:
         continue
 
+      in_w, in_h = nts.shape[DimNames.WIDTH], nts.shape[DimNames.HEIGHT]
       for comb in Shape.random_dimension_product(possible_sizes):
         out_nts = TypeShape(nts.dtype, Shape(*zip(names, comb)))
-        if is_reachable(out_nts, target_output):
+        out_w, out_h = out_nts.shape[DimNames.WIDTH], out_nts.shape[DimNames.HEIGHT]
+        if valid_config(in_h, out_h, in_w, out_w) and is_reachable(out_nts, target_output):
           yield ({},
                  {IOLabel.CONV2D_OUT: out_nts},
                  {IOLabel.CONV2D_IN: label})
@@ -141,26 +177,31 @@ class Conv2D(Function,
 
     for s_h in stride_range(h_i, h_o):
       for s_w in stride_range(w_i, w_o):
+        if s_h != s_w:
+          continue
         for k_h in range(1, 10):
-          for k_w in range(1, 10):
-            configurations.append({
-              cls.arg_KERNEL_HEIGHT: k_h,
-              cls.arg_KERNEL_WIDTH: k_w,
-              cls.arg_STRIDE_HEIGHT: s_h,
-              cls.arg_STRIDE_WIDTH: s_w,
-              cls.arg_PADDING: Conv2D.Padding.SAME.value,
-              cls.arg_FILTER: c
-            })
+          configurations.append({
+            cls.arg_KERNEL_HEIGHT: k_h,
+            cls.arg_KERNEL_WIDTH: k_h,
+            cls.arg_STRIDE_HEIGHT: s_h,
+            cls.arg_STRIDE_WIDTH: s_w,
+            cls.arg_PADDING: QConv2D.Padding.SAME.value,
+            cls.arg_FILTER: c
+          })
     for k_w in filter_range(w_i, w_o):
       for k_h in filter_range(h_i, h_o):
+        if k_w != k_h:
+          continue
         for s_h in stride_range(h_i - k_h + 1, h_o):
           for s_w in stride_range(w_i - k_w + 1, w_o):
+            if s_h != s_w:
+              continue
             configurations.append({
               cls.arg_KERNEL_HEIGHT: k_h,
               cls.arg_KERNEL_WIDTH: k_w,
               cls.arg_STRIDE_HEIGHT: s_h,
               cls.arg_STRIDE_WIDTH: s_w,
-              cls.arg_PADDING: Conv2D.Padding.VALID.value,
+              cls.arg_PADDING: QConv2D.Padding.VALID.value,
               cls.arg_FILTER: c
             })
     return configurations
@@ -299,7 +340,7 @@ class Conv2D(Function,
     return result_params, result_prob
 
   def __init__(self, **kwargs):
-    super(Conv2D, self).__init__(**kwargs)
+    super(QConv2D, self).__init__(**kwargs)
     if not (isinstance(self.attr[self.arg_OUT_NAMED_TYPE_SHAPES], dict) and
             all([isinstance(nts, TypeShape) and isinstance(label, str) for label, nts in
                  self.attr[self.arg_OUT_NAMED_TYPE_SHAPES].items()])):
@@ -324,7 +365,7 @@ class Conv2D(Function,
         [_v for _v in variable_pool.get(self.__name__ + '|kernel', []) if v.shape == _v.shape])
       return variable
 
-    result = Conv2D.__new__(Conv2D)
+    result = QConv2D.__new__(QConv2D)
     result.__setstate__(self.get_pb())
 
     if random() < .8:
@@ -342,15 +383,15 @@ class Conv2D(Function,
         new_variables.append(new_variable)
       result.variables = new_variables
       if changed:
-        result._name = Conv2D.getNewName()
+        result._name = QConv2D.getNewName()
     else:
       if random() < prob:
-        result._name = Conv2D.getNewName()
+        result._name = QConv2D.getNewName()
         out_nts = self.attr[self.arg_OUT_NAMED_TYPE_SHAPES][IOLabel.CONV2D_OUT]
         h_o = out_nts.shape[DimNames.HEIGHT]
         w_o = out_nts.shape[DimNames.WIDTH]
         c = out_nts.shape[DimNames.CHANNEL]
-        config = choice(Conv2D.configurations(h_i=self.attr[self.arg_IN_HEIGHT],
+        config = choice(QConv2D.configurations(h_i=self.attr[self.arg_IN_HEIGHT],
                                               h_o=h_o,
                                               w_i=self.attr[self.arg_IN_WIDTH],
                                               w_o=w_o,

@@ -14,6 +14,11 @@ from LAMARCK_ML.utils.evaluation import EvaluationHelperInterface
 
 
 class GenerationalModel(ModelInterface):
+  pb_GENERATION = b'generation'
+  pb_SELECTION = b'selection'
+  pb_REPRODUCTION_POOLS = b'reproduction_pools'
+  pb_END_INDIVIDUAL = b'#end_individual'
+
   class State(IntEnum):
     UNINITIALIZED = 0,
     INITIALIZED = 1,
@@ -83,6 +88,10 @@ class GenerationalModel(ModelInterface):
   def add(self, functionality, *args):
     def add_func(func):
       if isinstance(func, type) and issubclass(func, MetricInterface):
+        self._metrics.append(func())
+        return False
+
+      if isinstance(func, MetricInterface):
         self._metrics.append(func)
         return False
 
@@ -134,6 +143,14 @@ class GenerationalModel(ModelInterface):
 
   def remove(self, functionality):
     if isinstance(functionality, type) and issubclass(functionality, MetricInterface):
+      try:
+        self._metrics.remove(functionality())
+      except Exception:
+        Warning("Tried to remove non existing metric!")
+        return False
+      return True
+
+    if isinstance(functionality, MetricInterface):
       try:
         self._metrics.remove(functionality)
       except Exception:
@@ -314,3 +331,85 @@ class GenerationalModel(ModelInterface):
       self._GENERATION_IDX = _model.generation_idx
     if _model.state:
       self._STATE = GenerationalModel.State(_model.state)
+
+  def state_stream(self):
+    if self._GENERATION:
+      yield self.pb_GENERATION
+      for ind in self._GENERATION:
+        y = ind.__getstate__()
+        yield y
+        yield b'\n'+self.pb_END_INDIVIDUAL
+    yield b'\n\n'
+    if self._SELECTION:
+      yield self.pb_SELECTION
+      for ind in self._SELECTION:
+        yield ind.__getstate__()
+        yield b'\n'+self.pb_END_INDIVIDUAL
+    yield b'\n\n'
+    if self._REPRODUCTION_POOLS:
+      for pool in self._REPRODUCTION_POOLS:
+        yield self.pb_REPRODUCTION_POOLS
+        for ind in pool:
+          yield ind.__getstate__()
+          yield b'\n'+self.pb_END_INDIVIDUAL
+        yield b'\n\n'
+      yield b'\n'
+    rest = GenerationalModelProto()
+    if self._REPRODUCTION:
+      for method_id, ancestry in self._REPRODUCTION:
+        reprodPB = GenerationalModelProto.ReproductionProto()
+        reprodPB.method = method_id
+        reprodPB.ancestry.extend([anc.get_pb() for anc in ancestry])
+        rest.reproduction.append(reprodPB)
+    rest.generation_idx = self._GENERATION_IDX
+    rest.state = self._STATE.value
+    rest = rest.SerializeToString()
+    test = GenerationalModel.__new__(GenerationalModel)
+    test.setstate_from_pb(rest)
+    GenerationalModel.debug = rest
+    yield rest
+
+  def from_state_stream(self, stream):
+    line = next(stream)
+    if line == self.pb_GENERATION + b'\n':
+      self._GENERATION = list()
+      line = next(stream)
+      while line != b'\n':
+        pb = bytearray(b'\n')
+        while line != self.pb_END_INDIVIDUAL+b'\n':
+          pb.extend(line)
+          line = next(stream)
+        self._GENERATION.append(IndividualInterface.get_instance(bytes(pb[:-1])))
+        line = next(stream)
+      line = next(stream)
+    if line == self.pb_SELECTION + b'\n':
+      self._SELECTION = list()
+      line = next(stream)
+      while line != b'\n':
+        pb = bytearray(b'\n')
+        while line != self.pb_END_INDIVIDUAL+b'\n':
+          pb.extend(line)
+          line = next(stream)
+        self._SELECTION.append(IndividualInterface.get_instance(bytes(pb[:-1])))
+        line = next(stream)
+      line = next(stream)
+    if line == self.pb_REPRODUCTION_POOLS + b'\n':
+      self._REPRODUCTION_POOLS = list()
+    while line == self.pb_REPRODUCTION_POOLS + b'\n':
+      line = next(stream)
+      new_pool = list()
+      while line != b'\n':
+        pb = bytearray(b'\n')
+        while line != self.pb_END_INDIVIDUAL+b'\n':
+          pb.extend(line)
+          line = next(stream)
+        new_pool.append(IndividualInterface.get_instance(bytes(pb[:-1])))
+        line = next(stream)
+      self._REPRODUCTION_POOLS.append(new_pool)
+      line = next(stream)
+    line = next(stream)
+    pb = bytearray(b'')
+    while line != b'':
+      pb.extend(line)
+      line = next(stream, b'')
+    self.setstate_from_pb(bytes(pb))

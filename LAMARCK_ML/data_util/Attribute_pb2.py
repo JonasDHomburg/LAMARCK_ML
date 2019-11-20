@@ -22,7 +22,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='LAMARCK_ML/data_util/Attribute.proto',
   package='LAMARCK_ML',
   syntax='proto3',
-  serialized_pb=_b('\n$LAMARCK_ML/data_util/Attribute.proto\x12\nLAMARCK_ML\x1a LAMARCK_ML/data_util/Shape.proto\x1a LAMARCK_ML/data_util/DType.proto\x1a$LAMARCK_ML/data_util/TypeShape.proto\"\x92\x05\n\x0e\x41ttributeProto\x12\x0c\n\x04name\x18\x01 \x01(\t\x12+\n\x01v\x18\n \x01(\x0b\x32 .LAMARCK_ML.AttributeProto.Value\x1a\xd0\x03\n\x05Value\x12\x12\n\x08\x62ool_val\x18\n \x01(\x08H\x00\x12\x14\n\nstring_val\x18\x0b \x01(\tH\x00\x12\x13\n\tbytes_val\x18\x0c \x01(\x0cH\x00\x12\x11\n\x07int_val\x18\r \x01(\x03H\x00\x12\x14\n\ndouble_val\x18\x0e \x01(\x01H\x00\x12+\n\tshape_val\x18\x0f \x01(\x0b\x32\x16.LAMARCK_ML.ShapeProtoH\x00\x12*\n\x08type_val\x18\x10 \x01(\x0b\x32\x16.LAMARCK_ML.DTypeProtoH\x00\x12-\n\x07nts_val\x18\x11 \x01(\x0b\x32\x1a.LAMARCK_ML.TypeShapeProtoH\x00\x12\x33\n\x08list_val\x18\x12 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x32\n\x07set_val\x18\x13 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x34\n\ttuple_val\x18\x14 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x33\n\x08\x64ict_val\x18\x15 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.DictH\x00\x42\x03\n\x01v\x1a\x42\n\x04List\x12+\n\x01v\x18\x01 \x03(\x0b\x32 .LAMARCK_ML.AttributeProto.Value\x12\r\n\x05numpy\x18\x02 \x01(\x08\x1a.\n\x04\x44ict\x12&\n\x02vs\x18\x01 \x03(\x0b\x32\x1a.LAMARCK_ML.AttributeProtob\x06proto3')
+  serialized_pb=_b('\n$LAMARCK_ML/data_util/Attribute.proto\x12\nLAMARCK_ML\x1a LAMARCK_ML/data_util/Shape.proto\x1a LAMARCK_ML/data_util/DType.proto\x1a$LAMARCK_ML/data_util/TypeShape.proto\"\x97\x05\n\x0e\x41ttributeProto\x12\x0c\n\x04name\x18\x01 \x01(\t\x12+\n\x01v\x18\n \x01(\x0b\x32 .LAMARCK_ML.AttributeProto.Value\x1a\xd0\x03\n\x05Value\x12\x12\n\x08\x62ool_val\x18\n \x01(\x08H\x00\x12\x14\n\nstring_val\x18\x0b \x01(\tH\x00\x12\x13\n\tbytes_val\x18\x0c \x01(\x0cH\x00\x12\x11\n\x07int_val\x18\r \x01(\x03H\x00\x12\x14\n\ndouble_val\x18\x0e \x01(\x01H\x00\x12+\n\tshape_val\x18\x0f \x01(\x0b\x32\x16.LAMARCK_ML.ShapeProtoH\x00\x12*\n\x08type_val\x18\x10 \x01(\x0b\x32\x16.LAMARCK_ML.DTypeProtoH\x00\x12-\n\x07nts_val\x18\x11 \x01(\x0b\x32\x1a.LAMARCK_ML.TypeShapeProtoH\x00\x12\x33\n\x08list_val\x18\x12 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x32\n\x07set_val\x18\x13 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x34\n\ttuple_val\x18\x14 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x12\x33\n\x08\x64ict_val\x18\x15 \x01(\x0b\x32\x1f.LAMARCK_ML.AttributeProto.ListH\x00\x42\x03\n\x01v\x1a\x42\n\x04List\x12+\n\x01v\x18\x01 \x03(\x0b\x32 .LAMARCK_ML.AttributeProto.Value\x12\r\n\x05numpy\x18\x02 \x01(\x08\x1a\x33\n\x04\x44ict\x12+\n\x01v\x18\x01 \x03(\x0b\x32 .LAMARCK_ML.AttributeProto.Valueb\x06proto3')
   ,
   dependencies=[LAMARCK__ML_dot_data__util_dot_Shape__pb2.DESCRIPTOR,LAMARCK__ML_dot_data__util_dot_DType__pb2.DESCRIPTOR,LAMARCK__ML_dot_data__util_dot_TypeShape__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
@@ -185,7 +185,7 @@ _ATTRIBUTEPROTO_DICT = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='vs', full_name='LAMARCK_ML.AttributeProto.Dict.vs', index=0,
+      name='v', full_name='LAMARCK_ML.AttributeProto.Dict.v', index=0,
       number=1, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -204,7 +204,7 @@ _ATTRIBUTEPROTO_DICT = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=771,
-  serialized_end=817,
+  serialized_end=822,
 )
 
 _ATTRIBUTEPROTO = _descriptor.Descriptor(
@@ -241,7 +241,7 @@ _ATTRIBUTEPROTO = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=159,
-  serialized_end=817,
+  serialized_end=822,
 )
 
 _ATTRIBUTEPROTO_VALUE.fields_by_name['shape_val'].message_type = LAMARCK__ML_dot_data__util_dot_Shape__pb2._SHAPEPROTO
@@ -250,7 +250,7 @@ _ATTRIBUTEPROTO_VALUE.fields_by_name['nts_val'].message_type = LAMARCK__ML_dot_d
 _ATTRIBUTEPROTO_VALUE.fields_by_name['list_val'].message_type = _ATTRIBUTEPROTO_LIST
 _ATTRIBUTEPROTO_VALUE.fields_by_name['set_val'].message_type = _ATTRIBUTEPROTO_LIST
 _ATTRIBUTEPROTO_VALUE.fields_by_name['tuple_val'].message_type = _ATTRIBUTEPROTO_LIST
-_ATTRIBUTEPROTO_VALUE.fields_by_name['dict_val'].message_type = _ATTRIBUTEPROTO_DICT
+_ATTRIBUTEPROTO_VALUE.fields_by_name['dict_val'].message_type = _ATTRIBUTEPROTO_LIST
 _ATTRIBUTEPROTO_VALUE.containing_type = _ATTRIBUTEPROTO
 _ATTRIBUTEPROTO_VALUE.oneofs_by_name['v'].fields.append(
   _ATTRIBUTEPROTO_VALUE.fields_by_name['bool_val'])
@@ -290,7 +290,7 @@ _ATTRIBUTEPROTO_VALUE.oneofs_by_name['v'].fields.append(
 _ATTRIBUTEPROTO_VALUE.fields_by_name['dict_val'].containing_oneof = _ATTRIBUTEPROTO_VALUE.oneofs_by_name['v']
 _ATTRIBUTEPROTO_LIST.fields_by_name['v'].message_type = _ATTRIBUTEPROTO_VALUE
 _ATTRIBUTEPROTO_LIST.containing_type = _ATTRIBUTEPROTO
-_ATTRIBUTEPROTO_DICT.fields_by_name['vs'].message_type = _ATTRIBUTEPROTO
+_ATTRIBUTEPROTO_DICT.fields_by_name['v'].message_type = _ATTRIBUTEPROTO_VALUE
 _ATTRIBUTEPROTO_DICT.containing_type = _ATTRIBUTEPROTO
 _ATTRIBUTEPROTO.fields_by_name['v'].message_type = _ATTRIBUTEPROTO_VALUE
 DESCRIPTOR.message_types_by_name['AttributeProto'] = _ATTRIBUTEPROTO

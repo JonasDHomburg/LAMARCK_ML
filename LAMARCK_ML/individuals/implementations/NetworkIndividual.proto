@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package LAMARCK_ML;
+
+import "LAMARCK_ML/individuals/Individual.proto";
+import "LAMARCK_ML/architectures/NeuralNetwork.proto";
+import "LAMARCK_ML/architectures/losses/Loss.proto";
+import "LAMARCK_ML/data_util/TypeShape.proto";
+
+message NetworkIndividualProto{
+    string cls_name = 1;
+
+    message DataSourceProto {
+        string id_name = 1;
+        string label = 2;
+        TypeShapeProto tsp = 3;
+    }
+
+    IndividualProto baseIndividual = 10;
+    repeated NeuralNetworkProto networks = 11;
+    repeated DataSourceProto data_sources = 12;
+    repeated LossProto losses = 13;
+}

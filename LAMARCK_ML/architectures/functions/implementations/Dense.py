@@ -18,9 +18,13 @@ from LAMARCK_ML.data_util.dataType import \
   DInt8
 from LAMARCK_ML.data_util.shape import Shape
 from LAMARCK_ML.reproduction.methods import Mutation
+from LAMARCK_ML.metrics.implementations import FlOps, Parameters
 
 
-class Dense(Function, Mutation.Interface):
+class Dense(Function,
+            Mutation.Interface,
+            FlOps.Interface,
+            Parameters.Interface):
   # IOLabel.DENSE_OUT = 'DENSE_OUT'
   IOLabel.DENSE_OUT = 'DATA_OUT'
   # IOLabel.DENSE_IN = 'DENSE_IN'
@@ -29,6 +33,7 @@ class Dense(Function, Mutation.Interface):
   _DF_INPUTS = [IOLabel.DENSE_IN]
 
   arg_UNITS = 'units'
+  arg_IN_UNITS = 'in_units'
   arg_OUT_NAMED_TYPE_SHAPES = 'outTypeShape'
 
   __min_f = .5
@@ -111,7 +116,7 @@ class Dense(Function, Mutation.Interface):
       possibleBias = [v for v in variable_pool.get(cls.__name__ + '|bias', []) if v.shape == (outUnits,)]
     _dict = {cls.arg_ATTRIBUTES: {cls.arg_UNITS: outUnits,
                                   cls.arg_OUT_NAMED_TYPE_SHAPES: {out_label: out_nts},
-                                  },
+                                  cls.arg_IN_UNITS: inUnits},
              cls.arg_INPUT_MAPPING: dict(
                [(l_in, (l_out, id_name)) for l_in, (l_out, _, id_name) in input_dict.items()]),
              }
@@ -128,11 +133,11 @@ class Dense(Function, Mutation.Interface):
     _amount = len(_init) * len(_reg)
     _prob = 1 / 2 / _amount if amount_ > 0 else 1 / _amount
     return ([{**_dict, **{cls.arg_VARIABLES: [k, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
-                                                          Variable.arg_TRAINABLE: True,
-                                                          Variable.arg_NAME: cls.__name__ + '|bias',
-                                                          Variable.arg_SHAPE: (outUnits,),
-                                                          Variable.arg_INITIALIZER: init_,
-                                                          Variable.arg_REGULARISATION: reg_
+                                                             Variable.arg_TRAINABLE: True,
+                                                             Variable.arg_NAME: cls.__name__ + '|bias',
+                                                             Variable.arg_SHAPE: (outUnits,),
+                                                             Variable.arg_INITIALIZER: init_,
+                                                             Variable.arg_REGULARISATION: reg_
                                                              })]}} for k in possibleKernels] +
             [{**_dict, **{cls.arg_VARIABLES: [b, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
                                                              Variable.arg_TRAINABLE: True,
@@ -231,3 +236,10 @@ class Dense(Function, Mutation.Interface):
       else:
         return None
     return result
+
+  def flops_per_sample(self):
+    return self.attr[self.arg_IN_UNITS] * self.attr[self.arg_UNITS] \
+           + self.attr[self.arg_UNITS]  # ReLU
+
+  def parameters(self):
+    return self.attr[self.arg_IN_UNITS] * self.attr[self.arg_UNITS]

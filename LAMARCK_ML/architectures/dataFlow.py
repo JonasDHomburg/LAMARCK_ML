@@ -6,6 +6,7 @@ from LAMARCK_ML.data_util import ProtoSerializable
 
 class DataFlow(ProtoSerializable):
   def __init__(self, *args, **kwargs):
+    super(DataFlow, self).__init__(**kwargs)
     self._DF_INPUTS = []
 
   @property

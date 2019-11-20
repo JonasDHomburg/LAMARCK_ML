@@ -36,7 +36,10 @@ class ModelInterface(ProtoSerializable):
   def abstract_timestamp(self):
     raise NotImplementedError()
 
-  def setstate_from_pb(self, _model):
+  def state_stream(self):
+    raise NotImplementedError()
+
+  def from_state_stream(self, stream):
     raise NotImplementedError()
 
   pass

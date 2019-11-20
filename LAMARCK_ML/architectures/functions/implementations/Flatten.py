@@ -5,8 +5,12 @@ from LAMARCK_ML.architectures.functions.interface import Function
 from LAMARCK_ML.data_util import Shape, DimNames, TypeShape, IOLabel
 from LAMARCK_ML.data_util.dataType import *
 
+from LAMARCK_ML.metrics.implementations import FlOps, Parameters
 
-class Flatten(Function):
+
+class Flatten(Function,
+              FlOps.Interface,
+              Parameters.Interface):
   allowedTypes = [DHalf,
                   DFloat,
                   DDouble,
@@ -134,3 +138,9 @@ class Flatten(Function):
   @classmethod
   def max_transform(cls, nts):
     return cls.min_transform(nts)
+
+  def flops_per_sample(self):
+    return 0
+
+  def parameters(self):
+    return 0

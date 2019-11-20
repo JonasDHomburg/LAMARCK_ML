@@ -25,7 +25,7 @@ class Variable(ProtoSerializable):
     assert isinstance(self.name, str)
     self.value = kwargs.get(self.arg_VALUE)
     self.initializer = kwargs.get(self.arg_INITIALIZER)
-    self._shape = kwargs.get(self.arg_SHAPE) if not isinstance(self.value, np.ndarray) else self.value.shape
+    self._shape = tuple(kwargs.get(self.arg_SHAPE)) if not isinstance(self.value, np.ndarray) else tuple(self.value.shape)
     assert isinstance(self.value, np.ndarray) or (self.initializer is not None and self._shape is not None)
     self.regularisation = kwargs.get(self.arg_REGULARISATION)
 
@@ -60,8 +60,7 @@ class Variable(ProtoSerializable):
       _dim.size = dim
       result.shape.dim.append(_dim)
     if self.value is not None:
-      _shape = self.value.shape
-      result.__getattribute__(self.dtype.attr).extend([v for v in self.value.reshape(-1).tolist()])
+      result.__getattribute__(self.dtype.attr).extend(self.value.reshape(-1).tolist())
     if self.initializer is not None:
       self.initializer.get_pb(result.initializer)
     if self.regularisation is not None:
@@ -70,6 +69,17 @@ class Variable(ProtoSerializable):
 
   def __getstate__(self):
     return self.get_pb().SerializeToString()
+
+  def __copy__(self):
+    result = Variable.__new__(Variable)
+    result.dtype = self.dtype
+    result.trainable = self.trainable
+    result.name = self.name
+    result.value = np.copy(self.value) if self.value is not None else None
+    result.initializer = self.initializer
+    result._shape = tuple(self._shape)
+    result.regularisation = self.regularisation
+    return result
 
   def __setstate__(self, state):
     if isinstance(state, str) or isinstance(state, bytes):
@@ -89,7 +99,7 @@ class Variable(ProtoSerializable):
     if len(valueAsList) > 0:
       values = np.array(valueAsList)
       self.value = values.reshape(_shape)
-      self._shape = self.value.shape
+      self._shape = tuple(self.value.shape)
     else:
       self.value = None
     self.trainable = _variable.trainable

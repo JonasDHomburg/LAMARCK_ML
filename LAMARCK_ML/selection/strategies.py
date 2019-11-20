@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from LAMARCK_ML.individuals import sortingClass
+from LAMARCK_ML.utils.sortingClass import SortingClass
 from LAMARCK_ML.selection.interface import SelectionStrategyInterface
 
 
@@ -48,7 +48,7 @@ class LinearRankingSelection(SortingBasedSelection):
     return "LRS"
 
   def select(self, pool):
-    sorted_pool = [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
+    sorted_pool = [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
     # pi_ is not \Pi of the description! pi_ is actually \Pi-1
     pi_ = len(pool) - 1
     # Since the sum of the probabilities is normalized anyways the constant factor of 1/pi is ignored.
@@ -90,7 +90,7 @@ class ExponentialRankingSelection(SortingBasedSelection):
     return "RSV1"
 
   def select(self, pool):
-    sorted_pool = [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
+    sorted_pool = [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
 
     prob = np.asarray([((1 - self._p_c) ** i) * self._p_c for i in range(len(pool))])
     prob[-1] = prob[-1] / self._p_c
@@ -173,7 +173,7 @@ class TournamentSelection(SortingBasedSelection):
     return "ToS"
 
   def select(self, pool):
-    result = [max([sortingClass(obj=obj,
+    result = [max([SortingClass(obj=obj,
                                 cmp=self.cmp) for obj in np.random.choice(pool, self._St, replace=False).tolist()]).obj
               for _ in range(self._limit)]
     return result
@@ -197,7 +197,7 @@ class TruncationSelection(SortingBasedSelection):
     return "TrS"
 
   def select(self, pool):
-    sorted_pool = [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
+    sorted_pool = [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
     if isinstance(self._u, int):
       sorted_pool = sorted_pool[:self._u]
     elif isinstance(self._u, float):
@@ -230,7 +230,7 @@ class GreedyOverSelection(SortingBasedSelection):
 
   def select(self, pool):
     # sorted_pool = sorted(pool, key=lambda x: x.fitness, reverse=True)
-    sorted_pool = [sc.obj for sc in sorted([sortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
+    sorted_pool = [sc.obj for sc in sorted([SortingClass(obj=p, cmp=self.cmp) for p in pool], reverse=True)]
     ind = int(len(sorted_pool) * self._top)
     high, low = sorted_pool[:ind], sorted_pool[ind:]
     high_limit = int(math.ceil(self._limit * .5))

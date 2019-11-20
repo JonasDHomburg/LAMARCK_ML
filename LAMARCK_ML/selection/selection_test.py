@@ -1,5 +1,6 @@
 import random
 import unittest
+import os
 
 from LAMARCK_ML.individuals import IndividualInterface
 from LAMARCK_ML.selection import \
@@ -12,6 +13,7 @@ from LAMARCK_ML.selection import \
   GreedyOverSelection
 
 
+@unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestSelectionStrategies(unittest.TestCase):
   class OneMetricIndividual(IndividualInterface):
     def __init__(self):
@@ -21,11 +23,14 @@ class TestSelectionStrategies(unittest.TestCase):
     def __sub__(self, other):
       return abs(self._random_loc - other._random_loc)
 
+    def __eq__(self, other):
+      return self is other
+
     pass
 
   @staticmethod
   def reverse_cmp(x, y):
-    return 0 if x == y else 1 if x < y else -1
+    return -1 if x > y else 1 if y > x else 0
 
   def setUp(self) -> None:
     self.OMpopulation = [TestSelectionStrategies.OneMetricIndividual() for _ in range(int(1e4))]

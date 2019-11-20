@@ -12,10 +12,12 @@ class ModelStateSaverLoader(ModellUtil):
   arg_REPRODUCTION = 'reproduction'
   arg_REPLACEMENT = 'replacement'
   arg_NEA_DONE = 'nea_done'
+  arg_FILE_BATCH = 'file_batch'
 
   def __init__(self, **kwargs):
     super(ModelStateSaverLoader, self).__init__(**kwargs)
     self.file = kwargs.get(self.arg_FILE, './model_state.pb')
+    self.file_batch = kwargs.get(self.arg_FILE_BATCH, 1)
     if kwargs.get(self.arg_PREPARATION, False):
       setattr(self, 'end_prepare', types.MethodType(ModelStateSaverLoader._end_prepare, self))
     if kwargs.get(self.arg_EVALUATION, True):
@@ -31,13 +33,23 @@ class ModelStateSaverLoader(ModellUtil):
     pass
 
   def save_model(self, model):
-    with open(self.file, 'wb') as f:
-      f.write(model.get_pb().SerializeToString())
+    with open(self.file + '_tmp', 'wb') as f:
+      for data in model.state_stream():
+        f.write(data)
+    os.rename(self.file + '_tmp', self.file)
 
   def load_model(self, model):
     if os.path.isfile(self.file):
       with open(self.file, 'rb') as f:
-        model.setstate_from_pb(f.read())
+        def stream(f):
+          while True:
+            lines = f.readlines(self.file_batch)
+            if not lines:
+              break
+            for line in lines:
+              yield line
+
+        model.from_state_stream(stream(f))
 
   def _end_prepare(self, func):
     def wrapper(model):

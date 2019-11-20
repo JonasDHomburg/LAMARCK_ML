@@ -14,18 +14,15 @@ _sym_db = _symbol_database.Default()
 
 
 from LAMARCK_ML.data_util import Attribute_pb2 as LAMARCK__ML_dot_data__util_dot_Attribute__pb2
-from LAMARCK_ML.architectures import NeuralNetwork_pb2 as LAMARCK__ML_dot_architectures_dot_NeuralNetwork__pb2
-from LAMARCK_ML.architectures.losses import Loss_pb2 as LAMARCK__ML_dot_architectures_dot_losses_dot_Loss__pb2
-from LAMARCK_ML.data_util import TypeShape_pb2 as LAMARCK__ML_dot_data__util_dot_TypeShape__pb2
 
 
 DESCRIPTOR = _descriptor.FileDescriptor(
   name='LAMARCK_ML/individuals/Individual.proto',
   package='LAMARCK_ML',
   syntax='proto3',
-  serialized_pb=_b('\n\'LAMARCK_ML/individuals/Individual.proto\x12\nLAMARCK_ML\x1a$LAMARCK_ML/data_util/Attribute.proto\x1a,LAMARCK_ML/architectures/NeuralNetwork.proto\x1a*LAMARCK_ML/architectures/losses/Loss.proto\x1a$LAMARCK_ML/data_util/TypeShape.proto\"\xbf\x03\n\x0fIndividualProto\x12\x10\n\x08\x63ls_name\x18\x01 \x01(\t\x12\x0f\n\x07id_name\x18\x02 \x01(\t\x12\x38\n\x07metrics\x18\x05 \x03(\x0b\x32\'.LAMARCK_ML.IndividualProto.MetricProto\x12\x30\n\x08networks\x18\x06 \x03(\x0b\x32\x1e.LAMARCK_ML.NeuralNetworkProto\x12\x41\n\x0c\x64\x61ta_sources\x18\x07 \x03(\x0b\x32+.LAMARCK_ML.IndividualProto.DataSourceProto\x12%\n\x06losses\x18\x08 \x03(\x0b\x32\x15.LAMARCK_ML.LossProto\x12(\n\x04\x61ttr\x18\n \x03(\x0b\x32\x1a.LAMARCK_ML.AttributeProto\x1a-\n\x0bMetricProto\x12\x0f\n\x07id_name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01\x1aZ\n\x0f\x44\x61taSourceProto\x12\x0f\n\x07id_name\x18\x01 \x01(\t\x12\r\n\x05label\x18\x02 \x01(\t\x12\'\n\x03tsp\x18\x03 \x01(\x0b\x32\x1a.LAMARCK_ML.TypeShapeProtob\x06proto3')
+  serialized_pb=_b('\n\'LAMARCK_ML/individuals/Individual.proto\x12\nLAMARCK_ML\x1a$LAMARCK_ML/data_util/Attribute.proto\"\xc7\x01\n\x0fIndividualProto\x12\x10\n\x08\x63ls_name\x18\x01 \x01(\t\x12\x0f\n\x07id_name\x18\x02 \x01(\t\x12\x38\n\x07metrics\x18\x03 \x03(\x0b\x32\'.LAMARCK_ML.IndividualProto.MetricProto\x12(\n\x04\x61ttr\x18\x04 \x03(\x0b\x32\x1a.LAMARCK_ML.AttributeProto\x1a-\n\x0bMetricProto\x12\x0f\n\x07id_name\x18\x01 \x01(\t\x12\r\n\x05value\x18\x02 \x01(\x01\x62\x06proto3')
   ,
-  dependencies=[LAMARCK__ML_dot_data__util_dot_Attribute__pb2.DESCRIPTOR,LAMARCK__ML_dot_architectures_dot_NeuralNetwork__pb2.DESCRIPTOR,LAMARCK__ML_dot_architectures_dot_losses_dot_Loss__pb2.DESCRIPTOR,LAMARCK__ML_dot_data__util_dot_TypeShape__pb2.DESCRIPTOR,])
+  dependencies=[LAMARCK__ML_dot_data__util_dot_Attribute__pb2.DESCRIPTOR,])
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
@@ -64,52 +61,8 @@ _INDIVIDUALPROTO_METRICPROTO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=532,
-  serialized_end=577,
-)
-
-_INDIVIDUALPROTO_DATASOURCEPROTO = _descriptor.Descriptor(
-  name='DataSourceProto',
-  full_name='LAMARCK_ML.IndividualProto.DataSourceProto',
-  filename=None,
-  file=DESCRIPTOR,
-  containing_type=None,
-  fields=[
-    _descriptor.FieldDescriptor(
-      name='id_name', full_name='LAMARCK_ML.IndividualProto.DataSourceProto.id_name', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='label', full_name='LAMARCK_ML.IndividualProto.DataSourceProto.label', index=1,
-      number=2, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='tsp', full_name='LAMARCK_ML.IndividualProto.DataSourceProto.tsp', index=2,
-      number=3, type=11, cpp_type=10, label=1,
-      has_default_value=False, default_value=None,
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-  ],
-  extensions=[
-  ],
-  nested_types=[],
-  enum_types=[
-  ],
-  options=None,
-  is_extendable=False,
-  syntax='proto3',
-  extension_ranges=[],
-  oneofs=[
-  ],
-  serialized_start=579,
-  serialized_end=669,
+  serialized_start=248,
+  serialized_end=293,
 )
 
 _INDIVIDUALPROTO = _descriptor.Descriptor(
@@ -135,35 +88,14 @@ _INDIVIDUALPROTO = _descriptor.Descriptor(
       options=None),
     _descriptor.FieldDescriptor(
       name='metrics', full_name='LAMARCK_ML.IndividualProto.metrics', index=2,
-      number=5, type=11, cpp_type=10, label=3,
+      number=3, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='networks', full_name='LAMARCK_ML.IndividualProto.networks', index=3,
-      number=6, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='data_sources', full_name='LAMARCK_ML.IndividualProto.data_sources', index=4,
-      number=7, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='losses', full_name='LAMARCK_ML.IndividualProto.losses', index=5,
-      number=8, type=11, cpp_type=10, label=3,
-      has_default_value=False, default_value=[],
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='attr', full_name='LAMARCK_ML.IndividualProto.attr', index=6,
-      number=10, type=11, cpp_type=10, label=3,
+      name='attr', full_name='LAMARCK_ML.IndividualProto.attr', index=3,
+      number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -171,7 +103,7 @@ _INDIVIDUALPROTO = _descriptor.Descriptor(
   ],
   extensions=[
   ],
-  nested_types=[_INDIVIDUALPROTO_METRICPROTO, _INDIVIDUALPROTO_DATASOURCEPROTO, ],
+  nested_types=[_INDIVIDUALPROTO_METRICPROTO, ],
   enum_types=[
   ],
   options=None,
@@ -180,17 +112,12 @@ _INDIVIDUALPROTO = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=222,
-  serialized_end=669,
+  serialized_start=94,
+  serialized_end=293,
 )
 
 _INDIVIDUALPROTO_METRICPROTO.containing_type = _INDIVIDUALPROTO
-_INDIVIDUALPROTO_DATASOURCEPROTO.fields_by_name['tsp'].message_type = LAMARCK__ML_dot_data__util_dot_TypeShape__pb2._TYPESHAPEPROTO
-_INDIVIDUALPROTO_DATASOURCEPROTO.containing_type = _INDIVIDUALPROTO
 _INDIVIDUALPROTO.fields_by_name['metrics'].message_type = _INDIVIDUALPROTO_METRICPROTO
-_INDIVIDUALPROTO.fields_by_name['networks'].message_type = LAMARCK__ML_dot_architectures_dot_NeuralNetwork__pb2._NEURALNETWORKPROTO
-_INDIVIDUALPROTO.fields_by_name['data_sources'].message_type = _INDIVIDUALPROTO_DATASOURCEPROTO
-_INDIVIDUALPROTO.fields_by_name['losses'].message_type = LAMARCK__ML_dot_architectures_dot_losses_dot_Loss__pb2._LOSSPROTO
 _INDIVIDUALPROTO.fields_by_name['attr'].message_type = LAMARCK__ML_dot_data__util_dot_Attribute__pb2._ATTRIBUTEPROTO
 DESCRIPTOR.message_types_by_name['IndividualProto'] = _INDIVIDUALPROTO
 
@@ -202,20 +129,12 @@ IndividualProto = _reflection.GeneratedProtocolMessageType('IndividualProto', (_
     # @@protoc_insertion_point(class_scope:LAMARCK_ML.IndividualProto.MetricProto)
     ))
   ,
-
-  DataSourceProto = _reflection.GeneratedProtocolMessageType('DataSourceProto', (_message.Message,), dict(
-    DESCRIPTOR = _INDIVIDUALPROTO_DATASOURCEPROTO,
-    __module__ = 'LAMARCK_ML.individuals.Individual_pb2'
-    # @@protoc_insertion_point(class_scope:LAMARCK_ML.IndividualProto.DataSourceProto)
-    ))
-  ,
   DESCRIPTOR = _INDIVIDUALPROTO,
   __module__ = 'LAMARCK_ML.individuals.Individual_pb2'
   # @@protoc_insertion_point(class_scope:LAMARCK_ML.IndividualProto)
   ))
 _sym_db.RegisterMessage(IndividualProto)
 _sym_db.RegisterMessage(IndividualProto.MetricProto)
-_sym_db.RegisterMessage(IndividualProto.DataSourceProto)
 
 
 # @@protoc_insertion_point(module_scope)

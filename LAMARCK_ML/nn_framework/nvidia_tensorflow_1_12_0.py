@@ -7,15 +7,14 @@ from LAMARCK_ML.architectures.variables.regularisation import *
 from LAMARCK_ML.data_util import DimNames, IOLabel
 from LAMARCK_ML.data_util.dataType import *
 from LAMARCK_ML.individuals import IndividualInterface
-from LAMARCK_ML.metrics import Accuracy, FlOps, Parameters, TimeMetric, MemoryMetric
+from LAMARCK_ML.metrics import Accuracy, TimeMetric, MemoryMetric
 from LAMARCK_ML.nn_framework import NeuralNetworkFrameworkInterface
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
-from tensorflow.python.framework import dtypes
 from tensorflow.python.framework import tensor_shape
 from tensorflow.python.keras import backend as K
-from tensorflow.python.keras.engine.input_spec import InputSpec
+from tensorflow.python.keras.engine.base_layer import InputSpec
 from tensorflow.python.ops import nn_ops
 from tensorflow.python.keras.utils import conv_utils
 
@@ -59,11 +58,12 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
   }
 
   mapping_loss = {
-    SoftmaxCrossEntropyWithLogits: tf.keras.losses.CategoricalCrossentropy,
-    SparseSoftmaxCrossEntropyWithLogits: tf.keras.losses.SparseCategoricalCrossentropy,
-    BinaryCrossentropy: tf.keras.losses.BinaryCrossentropy,
-    MeanSquaredError: tf.keras.losses.MeanSquaredError,
-    MeanAbsoluteError: tf.keras.losses.MeanAbsoluteError,
+    SoftmaxCrossEntropyWithLogits: tf.keras.losses.categorical_crossentropy,  # CategoricalCrossentropy,
+    SparseSoftmaxCrossEntropyWithLogits: tf.keras.losses.sparse_categorical_crossentropy,
+    # SparseCategoricalCrossentropy,
+    BinaryCrossentropy: tf.keras.losses.binary_crossentropy,  # BinaryCrossentropy,
+    MeanSquaredError: tf.keras.losses.mean_squared_error,  # MeanSquaredError,
+    MeanAbsoluteError: tf.keras.losses.mean_absolute_error,  # MeanAbsoluteError,
   }
 
   def __init__(self, **kwargs):
@@ -87,7 +87,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
     self._flops = None
     self._parameters = None
 
-    self.sess = tf.compat.v1.Session(config=self._sess_cfg)
+    self.sess = tf.Session(config=self._sess_cfg)
     K.set_session(self.sess)
     id2tfTensor = dict()
     id2tfObj = dict()
@@ -135,8 +135,9 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
 
     self.model = tf.keras.Model(inputs=self.inputs, outputs=self.outputs)
     self.model.compile(
-      optimizer=tf.keras.optimizers.Adam(),
-      loss=self.mapping_loss.get(individual.loss.__class__)(),
+      # optimizer=tf.keras.optimizers.Adam(),
+      optimizer=tf.train.AdamOptimizer(),
+      loss=self.mapping_loss.get(individual.loss.__class__),
       metrics=['accuracy']
     )
     self.data_sets[0]('train')
@@ -170,7 +171,6 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
                                for variable, value in zip(variable_names, K.batch_get_value(variable_names))])
     state[NeuralNetworkFrameworkInterface.arg_CMP] = self.cmp
     return state
-    # individual.update_state(**state)
 
   def reset_framework(self):
     self._memory = None
@@ -178,8 +178,8 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
     self._flops = None
     self._parameters = None
     del self.model
+    tf.reset_default_graph()
     K.clear_session()
-    tf.compat.v1.reset_default_graph()
 
   def Dense__(self, func, **kwargs):
     class C_Dense(tf.keras.layers.Dense):
@@ -189,20 +189,15 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
         self.bias_trainable = bias_trainable
 
       def build(self, input_shape):
-        dtype = dtypes.as_dtype(self.dtype or K.floatx())
-        if not (dtype.is_floating or dtype.is_complex):
-          raise TypeError('Unable to build `Dense` layer with non-floating point '
-                          'dtype %s' % (dtype,))
         input_shape = tensor_shape.TensorShape(input_shape)
-        if tensor_shape.dimension_value(input_shape[-1]) is None:
+        if input_shape[-1].value is None:
           raise ValueError('The last dimension of the inputs to `Dense` '
                            'should be defined. Found `None`.')
-        last_dim = tensor_shape.dimension_value(input_shape[-1])
         self.input_spec = InputSpec(min_ndim=2,
-                                    axes={-1: last_dim})
+                                    axes={-1: input_shape[-1].value})
         self.kernel = self.add_weight(
           'kernel',
-          shape=[last_dim, self.units],
+          shape=[input_shape[-1].value, self.units],
           initializer=self.kernel_initializer,
           regularizer=self.kernel_regularizer,
           constraint=self.kernel_constraint,
@@ -272,7 +267,7 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
           channel_axis = 1
         else:
           channel_axis = -1
-        if input_shape.dims[channel_axis].value is None:
+        if input_shape[channel_axis].value is None:
           raise ValueError('The channel dimension of the inputs '
                            'should be defined. Found `None`.')
         input_dim = int(input_shape[channel_axis])
@@ -303,14 +298,12 @@ class NVIDIATensorFlow(NeuralNetworkFrameworkInterface,
           op_padding = 'valid'
         else:
           op_padding = self.padding
-        if not isinstance(op_padding, (list, tuple)):
-          op_padding = op_padding.upper()
         self._convolution_op = nn_ops.Convolution(
           input_shape,
-          filter_shape=self.kernel.shape,
+          filter_shape=self.kernel.get_shape(),
           dilation_rate=self.dilation_rate,
           strides=self.strides,
-          padding=op_padding,
+          padding=op_padding.upper(),
           data_format=conv_utils.convert_data_format(self.data_format,
                                                      self.rank + 2))
         self.built = True
