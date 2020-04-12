@@ -1,15 +1,22 @@
-from LAMARCK_ML.architectures.functions import Dense
+from LAMARCK_ML.architectures.functions import Dense, Softmax
 from LAMARCK_ML.architectures.losses import Reduce, LossInterface
 from LAMARCK_ML.architectures import OverParameterizedNeuralNetwork
 from LAMARCK_ML.architectures.losses import SoftmaxCrossEntropyWithLogits, MeanSquaredError
 from LAMARCK_ML.data_util import IOLabel, DimNames, TypeShape
 from LAMARCK_ML.individuals.implementations.networkIndividualInterface import NetworkIndividualInterface
-from LAMARCK_ML.reproduction.methods import Mutation, Recombination
+from LAMARCK_ML.reproduction.methods import Mutation, Recombination, RandomStep
 from LAMARCK_ML.nn_framework import NeuralNetworkFrameworkInterface
 from LAMARCK_ML.individuals.implementations.NetworkIndividual_pb2 import NetworkIndividualProto
+from LAMARCK_ML.data_util.attribute import attr2pb, pb2attr
+from LAMARCK_ML.metrics.implementations import Nodes
 
 
-class ClassifierIndividualOPACDG(NetworkIndividualInterface, Mutation.Interface, Recombination.Interface):
+class ClassifierIndividualOPACDG(NetworkIndividualInterface,
+                                 Mutation.Interface,
+                                 Recombination.Interface,
+                                 RandomStep.Interface,
+                                 Nodes.Interface,
+                                 ):
   arg_MAX_NN_DEPTH = 'max_depth'
   arg_MIN_NN_DEPTH = 'min_depth'
   arg_MAX_NN_BRANCH = 'max_branch'
@@ -90,7 +97,7 @@ class ClassifierIndividualOPACDG(NetworkIndividualInterface, Mutation.Interface,
   def mutate(self, prob):
     result = ClassifierIndividualOPACDG.__new__(ClassifierIndividualOPACDG)
     result.metrics = dict()
-    result.attr = dict(self.attr)
+    result.attr = dict([pb2attr(attr2pb(key, value)) for key, value in self.attr.items()])
     result._data_nts = {label: (nts.__copy__(), id_name) for label, (nts, id_name) in self._data_nts.items()}
     result._losses = list(self._losses)
     result.loss = self.loss
@@ -102,7 +109,7 @@ class ClassifierIndividualOPACDG(NetworkIndividualInterface, Mutation.Interface,
   def recombine(self, other):
     result = ClassifierIndividualOPACDG.__new__(ClassifierIndividualOPACDG)
     result.metrics = dict()
-    result.attr = dict(self.attr)
+    result.attr = dict([pb2attr(attr2pb(key, value)) for key, value in self.attr.items()])
     result._data_nts = {label: (nts.__copy__(), id_name) for label, (nts, id_name) in self._data_nts.items()}
     result._losses = list(self._losses)
     result.loss = self.loss
@@ -111,6 +118,9 @@ class ClassifierIndividualOPACDG(NetworkIndividualInterface, Mutation.Interface,
     result._id_name = self.getNewName()
     return [result]
 
+  def step(self, step_size):
+    return self.mutate(step_size)
+
   def norm(self, other):
     return self.network.norm(other.network)
 
@@ -118,3 +128,29 @@ class ClassifierIndividualOPACDG(NetworkIndividualInterface, Mutation.Interface,
     kwargs[OverParameterizedNeuralNetwork.meta_QUALITY] = self.metrics
     self.network.cmp = kwargs.pop(NeuralNetworkFrameworkInterface.arg_CMP)
     self.network.update_state(*args, **kwargs)
+
+  def build_instance(self, nn_framework):
+    nn_framework.init_model({IOLabel.DATA}, {IOLabel.TARGET})
+    f_id2obj = dict()
+    for f in self.network.functions:
+      nn_framework.add_function(f)
+      f_id2obj[f.id_name] = f
+    nn_framework.set_train_parameters(**{
+      nn_framework.arg_LOSS: self.loss.__class__,
+    })
+    softmax_out = list()
+    for label, f_id in self.network.output_mapping.values():
+      f_obj = f_id2obj[f_id]
+      softmax = Softmax(**Softmax.generateParameters(
+        input_dict={IOLabel.SOFTMAX_IN: (label, f_obj.outputs, f_id)},
+        expected_outputs={IOLabel.SOFTMAX_OUT: f_obj.outputs[label]},
+      )[0][0])
+      nn_framework.add_function(softmax)
+      softmax_out.append((IOLabel.SOFTMAX_OUT, softmax.id_name))
+    nn_framework.finalize_model(output_ids=softmax_out)
+
+  def train_instance(self, nn_framework):
+    return nn_framework.train()
+
+  def nodes(self):
+    return sum([f.nodes() for f in self.network.functions if isinstance(f, Nodes.Interface)])

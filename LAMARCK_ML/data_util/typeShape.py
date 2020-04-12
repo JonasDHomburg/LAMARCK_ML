@@ -7,7 +7,8 @@ from LAMARCK_ML.data_util.protoInterface import ProtoSerializable
 
 class IOLabel():
   DEFAULT = 'DEFAULT'
-
+  DATA = 'DATA'
+  TARGET = 'TARGET'
 
 class TypeShape(NamedTuple, ProtoSerializable):
   dtype: Type[BaseType]

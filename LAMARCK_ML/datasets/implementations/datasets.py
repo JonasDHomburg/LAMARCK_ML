@@ -7,9 +7,6 @@ from LAMARCK_ML.data_util.attribute import attr2pb
 from LAMARCK_ML.datasets.Dataset_pb2 import DatasetProto
 from LAMARCK_ML.datasets.interface import DatasetInterface, InvalidBatchSize
 
-IOLabel.DATA = 'DATA'
-IOLabel.TARGET = 'TARGET'
-
 
 class SupervisedData(DatasetInterface):
   arg_BATCH = 'batch'
@@ -34,6 +31,19 @@ class SupervisedData(DatasetInterface):
     self.test_Y = kwargs.get(self.arg_TESTY)
     self.valid_X = kwargs.get(self.arg_VALIDX)
     self.valid_Y = kwargs.get(self.arg_VALIDY)
+    if self.train_X is None and self.test_X is None and self.valid_X is None:
+      raise Exception('All input data is None!')
+    if self.train_X is not None:
+      dimension_sizes = next(iter(self.train_X)).shape
+    elif self.test_X is not None:
+      dimension_sizes = next(iter(self.test_X)).shape
+    elif self.valid_X is not None:
+      dimension_sizes = next(iter(self.valid_X)).shape
+
+    if (self.train_X is not None and next(iter(self.train_X)).shape != dimension_sizes) or \
+        (self.test_X is not None and next(iter(self.test_X)).shape != dimension_sizes) or \
+        (self.valid_X is not None and next(iter(self.valid_X)).shape != dimension_sizes):
+      raise Exception('Train test and valid data must have the same size!')
     self.idx = 0
     self.len = 1
     self.data_X = self.test_X
@@ -114,6 +124,10 @@ class UncorrelatedSupervised(SupervisedData):
     self.len = attr.get('len')
     if self.state != '':
       self(self.state)
+
+  @property
+  def inputLabels(self):
+    return None
 
 # class CorrelatedSupervised(SupervisedData):
 #   def __init__(self, **kwargs):

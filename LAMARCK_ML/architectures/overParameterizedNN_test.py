@@ -4,7 +4,7 @@ import os
 from LAMARCK_ML.architectures.overParameterizedNN import OverParameterizedNeuralNetwork
 from LAMARCK_ML.data_util import DimNames, Shape, \
   DFloat, TypeShape, IOLabel
-from LAMARCK_ML.utils import CompareClass
+from LAMARCK_ML.utils.compareClass import CompareClass
 from LAMARCK_ML.architectures.functions import *
 from joblib import Parallel, delayed
 
@@ -19,7 +19,6 @@ class TestOverParameterizedNN(unittest.TestCase):
 
       IOLabel.DS1 = 'DS1'
       IOLabel.DS2 = 'DS2'
-      IOLabel.DATA = 'DATA'
       inputs = {IOLabel.DS1: (IOLabel.DATA, _data, 'Dataset0'),
                 IOLabel.DS2: (IOLabel.DATA, _data, 'Dataset1')}
 
@@ -27,11 +26,7 @@ class TestOverParameterizedNN(unittest.TestCase):
       outShape1 = Shape((DimNames.BATCH, batch), (DimNames.UNITS, 15))
       outputs = {'out0': TypeShape(DFloat, outShape), 'out1': TypeShape(DFloat, outShape1)}
       functions = [Merge, Dense]
-      cmp = CompareClass(**{
-        CompareClass.arg_SECONDARY_OBJECTIVES: {
 
-        }
-      })
       OPNN0 = OverParameterizedNeuralNetwork(**{
         OverParameterizedNeuralNetwork.arg_INPUTS: inputs,
         OverParameterizedNeuralNetwork.arg_OUTPUT_TARGETS: outputs,
@@ -76,7 +71,6 @@ class TestOverParameterizedNN(unittest.TestCase):
 
     IOLabel.DS1 = 'DS1'
     IOLabel.DS2 = 'DS2'
-    IOLabel.DATA = 'DATA'
     inputs = {IOLabel.DS1: (IOLabel.DATA, _data, 'Dataset0'),
               IOLabel.DS2: (IOLabel.DATA, _data, 'Dataset1')}
 
@@ -119,7 +113,6 @@ class TestOverParameterizedNN(unittest.TestCase):
     def _test_():
       IOLabel.DS1 = 'DS1'
       IOLabel.DS2 = 'DS2'
-      IOLabel.DATA = 'DATA'
 
       batch = 1
       _data = TypeShape(DFloat, Shape((DimNames.BATCH, batch), (DimNames.UNITS, 20)))

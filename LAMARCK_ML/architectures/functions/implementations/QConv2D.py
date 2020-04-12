@@ -61,7 +61,8 @@ class QConv2D(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 20) -> \
+                             max_possibilities: int = 20,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
     def valid_config(h_i, h_o, w_i, w_o):
       def stride_range(in_, out_):
@@ -383,10 +384,10 @@ class QConv2D(Function,
         new_variables.append(new_variable)
       result.variables = new_variables
       if changed:
-        result._name = QConv2D.getNewName()
+        result._id_name = QConv2D.getNewName()
     else:
       if random() < prob:
-        result._name = QConv2D.getNewName()
+        result._id_name = QConv2D.getNewName()
         out_nts = self.attr[self.arg_OUT_NAMED_TYPE_SHAPES][IOLabel.CONV2D_OUT]
         h_o = out_nts.shape[DimNames.HEIGHT]
         w_o = out_nts.shape[DimNames.WIDTH]
@@ -466,3 +467,7 @@ class QConv2D(Function,
   def parameters(self):
     return self.attr[self.arg_KERNEL_WIDTH] * self.attr[self.arg_KERNEL_HEIGHT] * \
            self.attr[self.arg_IN_CHANNEL] * self.attr[self.arg_FILTER]
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

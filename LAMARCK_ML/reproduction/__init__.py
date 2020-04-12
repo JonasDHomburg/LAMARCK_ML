@@ -1,2 +1,2 @@
 from .ancestry import AncestryEntity
-from .methods import MethodInterface, Mutation, Recombination
+from .methods import MethodInterface, Mutation, Recombination, RandomStep

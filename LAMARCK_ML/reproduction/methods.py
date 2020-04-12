@@ -1,6 +1,6 @@
 from LAMARCK_ML.reproduction.ancestry import AncestryEntity
 
-from random import sample
+from random import sample, random
 from joblib import Parallel, delayed
 
 import os
@@ -52,6 +52,45 @@ class Mutation(MethodInterface):
     if self.limit is not None:
       comb = list(zip(new_pool, log))
       new_pool, log = zip(*sample(comb, k=min(len(comb), self.limit)))
+      new_pool, log = list(new_pool), list(log)
+    return new_pool, log
+
+
+class RandomStep(MethodInterface):
+  ID = 'MUT_V2'
+
+  class Interface:
+    def step(self, step_size):
+      raise NotImplementedError()
+
+  arg_P = 'p'
+  arg_DESCENDANTS = 'descendants'
+  arg_STEP_SIZE = 'step_size'
+  arg_LIMIT = 'limit'
+
+  def __init__(self, **kwargs):
+    self.p = kwargs.get(self.arg_P, .05)
+    self.step_size = kwargs.get(self.arg_STEP_SIZE, 1)
+    self.descendants = kwargs.get(self.arg_DESCENDANTS, 1)
+    self.limit = kwargs.get(self.arg_LIMIT)
+
+  def reproduce(self, pool):
+    def prob_step(ind, p, step):
+      return ind.step(step) if random()<p else [ind], ind
+
+    new_pool = list()
+    log = list()
+    iter_list = [ind for ind in pool for _ in range(self.descendants)]
+
+    for new_inds, ind in Parallel(n_jobs=cpu_avail, require='sharedmem')(
+        delayed(prob_step)(_ind, self.p, self.step_size) for _ind in iter_list):
+      for new_ind in new_inds:
+        log.append(AncestryEntity(self.ID, new_ind.id_name, [ind.id_name]))
+        new_pool.append(new_ind)
+    if self.limit is not None:
+      comb = list(zip(new_pool, log))
+      new_pool, log = zip(*sample(comb, k=min(len(comb), self.limit)))
+      new_pool, log = list(new_pool), list(log)
     return new_pool, log
 
 
@@ -90,4 +129,5 @@ class Recombination(MethodInterface):
     if self.limit is not None:
       comb = list(zip(new_pool, log))
       new_pool, log = zip(*sample(comb, k=min(len(comb), self.limit)))
+      new_pool, log = list(new_pool), list(log)
     return new_pool, log

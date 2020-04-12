@@ -40,6 +40,7 @@ class GenerationalModel(ModelInterface):
   ]
 
   def __init__(self, **kwargs):
+    super(GenerationalModel, self).__init__()
     self._GENERATION = None
     self._SELECTION = None
     self._REPRODUCTION = None
@@ -338,20 +339,20 @@ class GenerationalModel(ModelInterface):
       for ind in self._GENERATION:
         y = ind.__getstate__()
         yield y
-        yield b'\n'+self.pb_END_INDIVIDUAL
+        yield b'\n' + self.pb_END_INDIVIDUAL
     yield b'\n\n'
     if self._SELECTION:
       yield self.pb_SELECTION
       for ind in self._SELECTION:
         yield ind.__getstate__()
-        yield b'\n'+self.pb_END_INDIVIDUAL
+        yield b'\n' + self.pb_END_INDIVIDUAL
     yield b'\n\n'
     if self._REPRODUCTION_POOLS:
       for pool in self._REPRODUCTION_POOLS:
         yield self.pb_REPRODUCTION_POOLS
         for ind in pool:
           yield ind.__getstate__()
-          yield b'\n'+self.pb_END_INDIVIDUAL
+          yield b'\n' + self.pb_END_INDIVIDUAL
         yield b'\n\n'
       yield b'\n'
     rest = GenerationalModelProto()
@@ -376,7 +377,7 @@ class GenerationalModel(ModelInterface):
       line = next(stream)
       while line != b'\n':
         pb = bytearray(b'\n')
-        while line != self.pb_END_INDIVIDUAL+b'\n':
+        while line != self.pb_END_INDIVIDUAL + b'\n':
           pb.extend(line)
           line = next(stream)
         self._GENERATION.append(IndividualInterface.get_instance(bytes(pb[:-1])))
@@ -387,7 +388,7 @@ class GenerationalModel(ModelInterface):
       line = next(stream)
       while line != b'\n':
         pb = bytearray(b'\n')
-        while line != self.pb_END_INDIVIDUAL+b'\n':
+        while line != self.pb_END_INDIVIDUAL + b'\n':
           pb.extend(line)
           line = next(stream)
         self._SELECTION.append(IndividualInterface.get_instance(bytes(pb[:-1])))
@@ -400,7 +401,7 @@ class GenerationalModel(ModelInterface):
       new_pool = list()
       while line != b'\n':
         pb = bytearray(b'\n')
-        while line != self.pb_END_INDIVIDUAL+b'\n':
+        while line != self.pb_END_INDIVIDUAL + b'\n':
           pb.extend(line)
           line = next(stream)
         new_pool.append(IndividualInterface.get_instance(bytes(pb[:-1])))

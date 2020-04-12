@@ -132,7 +132,7 @@ class MaxDiversitySelection(SelectionStrategyInterface):
       p_max = max(tmp_pool, key=lambda x: x[1] * x[1] + x[3] * x[3] * self._diversity_weight)
       tmp_pool.remove(p_max)
       result.append(p_max[0])
-      distances = [(p_max[0] - p[0]) + p[2] for p in tmp_pool]
+      distances = [p_max[0].norm(p[0]) + p[2] for p in tmp_pool]
       min_d = min(distances)
       max_d = max(distances) - min_d + .01
       tmp_pool = [(p[0], p[1], d, (d - min_d + .01) / max_d) for d, p in zip(distances, tmp_pool)]

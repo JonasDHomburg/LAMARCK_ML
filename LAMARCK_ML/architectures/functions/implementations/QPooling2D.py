@@ -61,7 +61,8 @@ class QPooling2D(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 15) -> \
+                             max_possibilities: int = 15,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
     def valid_config(h_i, h_o, w_i, w_o):
       configurations = list()
@@ -253,7 +254,7 @@ class QPooling2D(Function,
     result = QPooling2D.__new__(QPooling2D)
     result.__setstate__(self.get_pb())
     if random() < prob:
-      result._name = QPooling2D.getNewName()
+      result._id_name = QPooling2D.getNewName()
       out_nts = self.attr[self.arg_OUT_NAMED_TYPE_SHAPES][IOLabel.POOLING2D_OUT]
       h_o = out_nts.shape[DimNames.HEIGHT]
       w_o = out_nts.shape[DimNames.WIDTH]
@@ -309,3 +310,7 @@ class QPooling2D(Function,
 
   def parameters(self):
     return 0
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

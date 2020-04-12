@@ -7,13 +7,17 @@ from sklearn.datasets import make_classification
 
 from LAMARCK_ML.data_util import TypeShape, IOLabel, DFloat, Shape, DimNames
 from LAMARCK_ML.datasets import UncorrelatedSupervised
-from LAMARCK_ML.individuals import ClassifierIndividualACDG
-from LAMARCK_ML.nn_framework.nvidia_tensorflow import NVIDIATensorFlow
+from LAMARCK_ML.individuals import ClassifierIndividualACDG, ClassifierIndividualOPACDG
+if tf.__version__ == '1.12.0':
+  from LAMARCK_ML.nn_framework.nvidia_tensorflow_1_12_0 import NVIDIATensorFlow
+else:
+  from LAMARCK_ML.nn_framework.nvidia_tensorflow import NVIDIATensorFlow
 from LAMARCK_ML.architectures.functions import *
 
 
 @unittest.skipIf((os.environ.get('test_fast', False) in {'True','true', '1'}), 'time consuming')
 class TestNVIDIATensorFlowFramework(unittest.TestCase):
+  @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
   def test_MLP_Dense_Merge(self):
     train_samples = 1000
     data_X, data_Y = make_classification(n_samples=train_samples,
@@ -65,16 +69,15 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       NVIDIATensorFlow.arg_DATA_SETS: [dataset],
     })
 
-    framework.setup_individual(ci)
-
-    framework.accuracy()
+    ci.build_instance(framework)
+    framework.accuracy(ci)
     framework.time()
     framework.memory()
-    framework.flops_per_sample()
-    framework.parameters()
+    # framework.flops_per_sample()
+    # framework.parameters()
+    framework.reset()
 
-    framework.reset_framework()
-
+  @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
   def test_MLP_Dense_Merge_mutate(self):
     train_samples = 1000
     data_X, data_Y = make_classification(n_samples=train_samples,
@@ -127,16 +130,16 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       NVIDIATensorFlow.arg_DATA_SETS: [dataset],
     })
 
-    framework.setup_individual(ci)
 
-    framework.accuracy()
+    ci.build_instance(framework)
+    framework.accuracy(ci)
     framework.time()
     framework.memory()
-    framework.flops_per_sample()
-    framework.parameters()
+    # framework.flops_per_sample()
+    # framework.parameters()
+    framework.reset()
 
-    framework.reset_framework()
-
+  @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
   def test_Conv_Flatten_Pool_Dense_Merge(self):
     train_samples = 1000
     data_X, data_Y = make_classification(n_samples=train_samples,
@@ -173,16 +176,15 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       NVIDIATensorFlow.arg_DATA_SETS: [dataset],
     })
 
-    framework.setup_individual(ci)
-
-    framework.accuracy()
+    ci.build_instance(framework)
+    framework.accuracy(ci)
     framework.time()
     framework.memory()
-    framework.flops_per_sample()
-    framework.parameters()
+    # framework.flops_per_sample()
+    # framework.parameters()
+    framework.reset()
 
-    framework.reset_framework()
-
+  @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
   def test_Conv_Flatten_Pool_Dense_Merge_mutate_recombine(self):
     train_samples = 1000
     data_X, data_Y = make_classification(n_samples=train_samples,
@@ -220,16 +222,17 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       NVIDIATensorFlow.arg_DATA_SETS: [dataset],
     })
 
-    state = framework.setup_individual(ci)
+    ci.build_instance(framework)
+    state = ci.train_instance(framework)
     ci.update_state(**state)
 
-    self.assertTrue(isinstance(framework.accuracy(), float))
+    self.assertTrue(isinstance(framework.accuracy(None), float))
     self.assertTrue(isinstance(framework.time(), float))
     self.assertTrue(isinstance(framework.memory(), float))
-    self.assertTrue(isinstance(framework.flops_per_sample(), float))
-    self.assertTrue(isinstance(framework.parameters(), float))
+    # self.assertTrue(isinstance(framework.flops_per_sample(), float))
+    # self.assertTrue(isinstance(framework.parameters(), float))
 
-    framework.reset_framework()
+    framework.reset()
 
     self.assertGreater(len(ci.network.variable_pool), 0)
 
@@ -240,8 +243,8 @@ class TestNVIDIATensorFlowFramework(unittest.TestCase):
       ClassifierIndividualACDG.arg_MAX_NN_DEPTH: 10,
     })
 
-    framework.setup_individual(ci)
-    framework.reset_framework()
+    ci.build_instance(framework)
+    framework.reset()
 
     ci_rec = ci.recombine(ci2)[0]
     self.assertGreater(len(ci_rec.network.variable_pool), 0)

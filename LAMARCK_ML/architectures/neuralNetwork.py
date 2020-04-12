@@ -57,7 +57,6 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
       max_depth=self.attr[self.arg_MAX_DEPTH],
       max_recursion_depth=self.attr[self.arg_MAX_BRANCH]
     )
-    self._DF_INPUTS = set(self.input_mapping.keys())
     self.functions, network_outputs = NeuralNetwork.build_network(
       data_flow_inputs=input_df_obj,
       blueprint=blueprint,
@@ -82,8 +81,6 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
           [v for v in self.variable_pool if set(self.variable_pool.get(v)) == set(other.variable_pool.get(v))])
         and len(self.output_mapping) == len(other.output_mapping) == len(
           [True for om in self.output_mapping if om in other.output_mapping])
-        and len(self._DF_INPUTS) == len(other._DF_INPUTS) == len(
-          [True for dfi in self._DF_INPUTS if dfi in other._DF_INPUTS])
         and len(self.functions) == len(other.functions) == len(
           [True for f in self.functions if f in other.functions])
         and len(self.attr) == len(other.attr) == len(
@@ -105,10 +102,8 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
       return
     self._id_name = _nn.id_name
     self.function_cls = [Function.getClassByName(f_cls) for f_cls in _nn.function_cls]
-    # self.output_targets = dict([(elem.name, TypeShape.from_pb(elem.v.nts_val)) for elem in _nn.output_ntss.vs])
     self.output_targets = dict([pb2val(v) for v in _nn.output_ntss.v])
     self._inputs = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.input_mapping])
-    self._DF_INPUTS = set(self._inputs.keys())
     self.output_mapping = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.output_mapping])
     self.functions = [Function.get_instance(_f) for _f in _nn.functions]
     self.variable_pool = dict()
@@ -124,14 +119,13 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
     result.function_cls = list(self.function_cls)
     result.output_targets = dict([(label, value.__copy__()) for label, value in self.output_targets.items()])
     result._inputs = dict(self._inputs)
-    result._DF_INPUTS = set(self._DF_INPUTS)
     result.output_mapping = dict(self.output_mapping)
     result.functions = list()
     function_mapping = dict()
     for _f in self.functions:
       new_f = Function.__new__(Function)
       new_f.__setstate__(_f.get_pb())
-      new_f._name = new_f.getNewName(new_f)
+      new_f._id_name = new_f.getNewName(new_f)
       result.functions.append(new_f)
       function_mapping[_f.id_name] = new_f.id_name
     for _f in result.functions:
@@ -145,8 +139,6 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
 
   @classmethod
   def getNewName(cls):
-    # name = cls.__name__ + ':%09i' % (cls._nameIdx)
-    # cls._nameIdx += 1
     name = cls.__name__ + '_' + str(datetime.now().timestamp()) + '_%09i'%randint(0, 1e9 - 1)
     return name
 
@@ -853,7 +845,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
           if not required_inputs[_f]:
             required_inputs.pop(_f)
           new_out_f = out_f.__copy__()
-          new_out_f._name = new_out_f.getNewName(new_out_f)
+          new_out_f._id_name = new_out_f.getNewName(new_out_f)
           result.functions.append(new_out_f)
           new_functions[new_out_f.id_name] = new_out_f
           other_used_functions.add(new_out_f.id_name)
@@ -875,7 +867,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
           f_depth = o_id2depth[f_]
           if f_depth >= other_new_depth:
             new_out_f = o_id2function[f_].__copy__()
-            new_out_f._name = new_out_f.getNewName(new_out_f)
+            new_out_f._id_name = new_out_f.getNewName(new_out_f)
             result.functions.append(new_out_f)
             new_functions[new_out_f.id_name] = new_out_f
             other_used_functions.add(new_out_f.id_name)
@@ -898,7 +890,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
               if o_id2depth[in_id] >= other_new_depth:
                 in_f = o_id2function[in_id]
                 new_in_f = in_f.__copy__()
-                new_in_f._name = new_in_f.getNewName()
+                new_in_f._id_name = new_in_f.getNewName()
                 result.functions.append(new_in_f)
                 new_functions[new_in_f.id_name] = new_in_f
                 other_used_functions.add(new_in_f.id_name)
@@ -921,7 +913,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
           if f_ is None:
             continue
           new_out_f = f_.__copy__()
-          new_out_f._name = new_out_f.getNewName(new_out_f)
+          new_out_f._id_name = new_out_f.getNewName(new_out_f)
           result.functions.append(new_out_f)
           new_functions[new_out_f.id_name] = new_out_f
           for target_nts in required_inputs.get(_f, []):
@@ -950,7 +942,6 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
         _current[0] = depth - 1
       depth, depth2id, id2depth, id2function, _inputs, _outputs, cross_prob = _current
 
-    result._DF_INPUTS = self._DF_INPUTS
     result._inputs = dict()
     result._inputs = dict(self._inputs)
     result._id_name = result.getNewName()
@@ -964,3 +955,7 @@ class NeuralNetwork(ArchitectureInterface, DataFlow, Mutation.Interface, Recombi
         variable.value = value_dict[variable.name]
         variable.trainable = False
         self.variable_pool[variable.name] = self.variable_pool.get(variable.name, []) + [variable]
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return list(self._inputs.keys())

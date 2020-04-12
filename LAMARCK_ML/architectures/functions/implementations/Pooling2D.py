@@ -61,7 +61,8 @@ class Pooling2D(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 10) -> \
+                             max_possibilities: int = 10,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
 
     target_shape = target_output.shape
@@ -210,7 +211,7 @@ class Pooling2D(Function,
     result = Pooling2D.__new__(Pooling2D)
     result.__setstate__(self.get_pb())
     if random() < prob:
-      result._name = Pooling2D.getNewName()
+      result._id_name = Pooling2D.getNewName()
       out_nts = self.attr[self.arg_OUT_NAMED_TYPE_SHAPES][IOLabel.POOLING2D_OUT]
       h_o = out_nts.shape[DimNames.HEIGHT]
       w_o = out_nts.shape[DimNames.WIDTH]
@@ -266,3 +267,7 @@ class Pooling2D(Function,
 
   def parameters(self):
     return 0
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

@@ -37,7 +37,8 @@ class Merge(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 10) -> \
+                             max_possibilities: int = 10,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
 
     target_shape = target_output.shape
@@ -182,3 +183,7 @@ class Merge(Function,
 
   def parameters(self):
     return 0
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

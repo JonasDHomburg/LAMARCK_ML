@@ -1,5 +1,4 @@
 import math
-import time
 from enum import Enum
 from random import sample
 from typing import Tuple, List, Dict, Set
@@ -61,13 +60,13 @@ class Conv2D(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 10) -> \
+                             max_possibilities: int = 10,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
 
     target_shape = target_output.shape
 
     for label, nts in input_ntss.items():
-      _prev = time.time()
       if nts.dtype not in cls.allowedTypes:
         continue
       possible_sizes = []
@@ -342,10 +341,10 @@ class Conv2D(Function,
         new_variables.append(new_variable)
       result.variables = new_variables
       if changed:
-        result._name = Conv2D.getNewName()
+        result._id_name = Conv2D.getNewName()
     else:
       if random() < prob:
-        result._name = Conv2D.getNewName()
+        result._id_name = Conv2D.getNewName()
         out_nts = self.attr[self.arg_OUT_NAMED_TYPE_SHAPES][IOLabel.CONV2D_OUT]
         h_o = out_nts.shape[DimNames.HEIGHT]
         w_o = out_nts.shape[DimNames.WIDTH]
@@ -425,3 +424,7 @@ class Conv2D(Function,
   def parameters(self):
     return self.attr[self.arg_KERNEL_WIDTH] * self.attr[self.arg_KERNEL_HEIGHT] * \
            self.attr[self.arg_IN_CHANNEL] * self.attr[self.arg_FILTER]
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

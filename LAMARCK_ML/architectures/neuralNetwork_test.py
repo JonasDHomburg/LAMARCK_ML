@@ -11,7 +11,6 @@ import time
 
 @unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestNeuralNetwork(unittest.TestCase):
-  IOLabel.DATA = 'DATA'
   def test_instantiation_USD_outputTypeShapes(self):
     batch = 3
     _data = TypeShape(DFloat, Shape((DimNames.BATCH, batch),

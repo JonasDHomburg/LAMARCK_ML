@@ -21,7 +21,10 @@ class TestSelectionStrategies(unittest.TestCase):
       self._random_loc = random.random() * 1e2
 
     def __sub__(self, other):
-      return abs(self._random_loc - other._random_loc)
+      return self._random_loc - other._random_loc
+
+    def norm(self, other):
+      return abs(self.__sub__(other))
 
     def __eq__(self, other):
       return self is other

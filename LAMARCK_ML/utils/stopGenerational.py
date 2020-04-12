@@ -1,5 +1,5 @@
 from LAMARCK_ML.models import ModellUtil, NEADone
-from LAMARCK_ML.utils import SortingClass
+from LAMARCK_ML.utils.sortingClass import SortingClass
 
 
 class StopByGenerationIndex(ModellUtil):
@@ -11,9 +11,9 @@ class StopByGenerationIndex(ModellUtil):
 
   def end_select(self, func):
     def wrapper(model):
+      func()
       if model.abstract_timestamp >= self.max_t:
         raise NEADone()
-      func()
 
     return wrapper
 
@@ -38,8 +38,8 @@ class StopByNoProgress(ModellUtil):
       # new_best_ind_sc = StopByNoProgress.MetricContainer()
       new_best_ind_sc = max([SortingClass(obj=ind, cmp=self.cmp) for ind in model.generation])
       new_best_metrics = dict(new_best_ind_sc.obj.metrics)
-      if (self.best_ind_sc is None or (self.cmp is not None and self.cmp(new_best_metrics, self.best_ind_metrics)) or
-         new_best_ind_sc > self.best_ind_sc):
+      if (self.best_ind_sc is None or (self.cmp is not None and self.cmp(new_best_ind_sc.obj, self.best_ind_sc.obj)) or
+          new_best_ind_sc > self.best_ind_sc):
         self.waiting = 0
         self.best_ind_sc = new_best_ind_sc
         self.best_ind_metrics = new_best_metrics

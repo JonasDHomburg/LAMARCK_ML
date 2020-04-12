@@ -1,10 +1,11 @@
 from .implementations import Accuracy, \
   FlOps, \
-  NodesInNetwork, \
+  Nodes, \
   TimeMetric, \
   MemoryMetric, \
   Parameters, \
   LayoutCrossingEdges, \
   LayoutDistanceX, \
-  LayoutDistanceY
+  LayoutDistanceY, \
+  CartesianFitness
 from .interface import MetricInterface

@@ -39,7 +39,8 @@ class Flatten(Function,
                              input_ntss: Dict[str, TypeShape],
                              target_output: TypeShape,
                              is_reachable,
-                             max_possibilities: int = 10) -> \
+                             max_possibilities: int = 10,
+                             **kwargs) -> \
       List[Tuple[Dict[str, TypeShape], Dict[str, TypeShape], Dict[str, str]]]:
 
     allowed_in_dimensions = {DimNames.CHANNEL, DimNames.WIDTH, DimNames.HEIGHT}
@@ -65,7 +66,7 @@ class Flatten(Function,
       if invalid_dim:
         continue
       out_nts = TypeShape(nts.dtype, Shape((DimNames.BATCH, batch_size),
-                                                            (DimNames.UNITS, units))) if batch else \
+                                           (DimNames.UNITS, units))) if batch else \
         TypeShape(nts.dtype, Shape((DimNames.UNITS, units)))
       if is_reachable(out_nts, target_output):
         yield ({},
@@ -144,3 +145,7 @@ class Flatten(Function,
 
   def parameters(self):
     return 0
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS

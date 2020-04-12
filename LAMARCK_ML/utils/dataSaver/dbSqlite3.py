@@ -9,6 +9,7 @@ from LAMARCK_ML.reproduction.Ancestry_pb2 import AncestryProto
 from LAMARCK_ML.utils.dataSaver.dbConnection import DBConstants
 from LAMARCK_ML.utils.dataSaver.interface import DataSaverInterface
 from LAMARCK_ML.individuals.implementations.NetworkIndividual_pb2 import NetworkIndividualProto
+from LAMARCK_ML.individuals.Individual_pb2 import IndividualProto
 
 
 class DSSqlite3(DataSaverInterface):
@@ -35,14 +36,24 @@ class DSSqlite3(DataSaverInterface):
   def setup_db(self):
     cursor = self.conn.cursor()
 
-    cursor.execute(
-      "CREATE TABLE IF NOT EXISTS {} (rowid INTEGER PRIMARY KEY autoincrement, real_timestamp INTEGER, "
-      "abstract_timestamp INTEGER, id_name TEXT, serialized_file TEXT);".format(
-        DBConstants.table_individual.value[0]))
-    cursor.execute(
-      "CREATE TABLE IF NOT EXISTS {} (rowid INTEGER PRIMARY KEY autoincrement, real_timestamp INTEGER, "
-      "abstract_timestamp INTEGER, operation VARCHAR(8), descendant TEXT, serialized BLOB)".format(
-        DBConstants.table_ancestry.value[0]))
+    while True:
+      try:
+        cursor.execute(
+          "CREATE TABLE IF NOT EXISTS {} (rowid INTEGER PRIMARY KEY autoincrement, real_timestamp INTEGER, "
+          "abstract_timestamp INTEGER, id_name TEXT, serialized_file TEXT);".format(
+            DBConstants.table_individual.value[0]))
+      except db.OperationalError:
+        continue
+      break
+    while True:
+      try:
+        cursor.execute(
+          "CREATE TABLE IF NOT EXISTS {} (rowid INTEGER PRIMARY KEY autoincrement, real_timestamp INTEGER, "
+          "abstract_timestamp INTEGER, operation VARCHAR(8), descendant TEXT, serialized BLOB)".format(
+            DBConstants.table_ancestry.value[0]))
+      except db.OperationalError:
+        continue
+      break
     self.conn.commit()
     cursor.close()
 
@@ -141,8 +152,13 @@ class DSSqlite3(DataSaverInterface):
 
   def get_ancestries(self):
     cursor = self.conn.cursor()
-    cursor.execute("SELECT abstract_timestamp, serialized FROM {};".format(
-      DBConstants.table_ancestry.value[0]))
+    while True:
+      try:
+        cursor.execute("SELECT abstract_timestamp, serialized FROM {};".format(
+          DBConstants.table_ancestry.value[0]))
+      except db.OperationalError:
+        continue
+      break
     result = []
     for abstract_time, pb_bytes in cursor.fetchall():
       pb = AncestryProto()
@@ -153,23 +169,38 @@ class DSSqlite3(DataSaverInterface):
 
   def get_individual_names(self):
     cursor = self.conn.cursor()
-    cursor.execute("SELECT id_name FROM {};".format(DBConstants.table_individual.value[0]))
+    while True:
+      try:
+        cursor.execute("SELECT id_name FROM {};".format(DBConstants.table_individual.value[0]))
+      except db.OperationalError:
+        continue
+      break
     result = set([id_[0] for id_ in cursor.fetchall()])
     cursor.close()
     return result
 
   def time_stamps_by_individual_name(self, individual_name):
     cursor = self.conn.cursor()
-    cursor.execute("SELECT real_timestamp, abstract_timestamp FROM {} WHERE id_name=?;".format(
-      DBConstants.table_individual.value[0]), [individual_name])
+    while True:
+      try:
+        cursor.execute("SELECT real_timestamp, abstract_timestamp FROM {} WHERE id_name=?;".format(
+          DBConstants.table_individual.value[0]), [individual_name])
+      except db.OperationalError:
+        continue
+      break
     result = cursor.fetchall()
     cursor.close()
     return result
 
   def get_abstract_time_stamps(self):
     cursor = self.conn.cursor()
-    cursor.execute("SELECT DISTINCT abstract_timestamp FROM {};".format(
-      DBConstants.table_individual.value[0]))
+    while True:
+      try:
+        cursor.execute("SELECT DISTINCT abstract_timestamp FROM {};".format(
+          DBConstants.table_individual.value[0]))
+      except db.OperationalError:
+        continue
+      break
     result = [ts[0] for ts in cursor.fetchall()]
     cursor.close()
     return result
@@ -186,8 +217,10 @@ class DSSqlite3(DataSaverInterface):
     with open(self._path + '/' + name + '.pb', 'rb') as f:
       last = f.read()
     proto = NetworkIndividualProto()
+    # proto = IndividualProto()
     proto.ParseFromString(last)
     return dict([(m.id_name, m.value) for m in proto.baseIndividual.metrics])
+    # return dict([(m.id_name, m.value) for m in proto.metrics])
 
   def get_individual_functions(self, name):
     with open(self._path + '/' + name + '.pb', 'rb') as f:

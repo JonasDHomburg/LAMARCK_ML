@@ -2,6 +2,7 @@ from LAMARCK_ML.architectures.functions import Dense
 from LAMARCK_ML.architectures.losses import Reduce, LossInterface
 from LAMARCK_ML.architectures.losses import SoftmaxCrossEntropyWithLogits, MeanSquaredError
 from LAMARCK_ML.architectures.neuralNetwork import NeuralNetwork
+from LAMARCK_ML.architectures.functions import Softmax
 from LAMARCK_ML.data_util import IOLabel, DimNames
 from LAMARCK_ML.individuals.implementations.networkIndividualInterface import NetworkIndividualInterface
 from LAMARCK_ML.reproduction.methods import Mutation, Recombination
@@ -88,3 +89,26 @@ class ClassifierIndividualACDG(NetworkIndividualInterface, Mutation.Interface, R
 
   def update_state(self, *args, **kwargs):
     self.network.update_state(*args, **kwargs)
+
+  def build_instance(self, nn_framework):
+    nn_framework.init_model({IOLabel.DATA}, {IOLabel.TARGET})
+    f_id2obj = dict()
+    for f in self.network.functions:
+      nn_framework.add_function(f)
+      f_id2obj[f.id_name] = f
+    nn_framework.set_train_parameters(**{
+      nn_framework.arg_LOSS: self.loss.__class__,
+    })
+    softmax_out = list()
+    for label, f_id in self.network.output_mapping.values():
+      f_obj = f_id2obj[f_id]
+      softmax = Softmax(**Softmax.generateParameters(
+        input_dict={IOLabel.SOFTMAX_IN: (label, f_obj.outputs, f_id)},
+        expected_outputs={IOLabel.SOFTMAX_OUT: f_obj.outputs[label]},
+      )[0][0])
+      nn_framework.add_function(softmax)
+      softmax_out.append((IOLabel.SOFTMAX_OUT, softmax.id_name))
+    nn_framework.finalize_model(output_ids=softmax_out)
+
+  def train_instance(self, nn_framework):
+    return nn_framework.train()

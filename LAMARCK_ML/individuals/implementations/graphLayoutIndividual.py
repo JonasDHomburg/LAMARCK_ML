@@ -39,11 +39,25 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
       self.real_nodes.add(e1)
 
     def n2depth(n, subn, mem=dict()):
-      if n not in subn:
-        mem[n] = 0
-        return 0
-      if n not in mem:
-        mem[n] = max([n2depth(_n, subn=subn, mem=mem) for _n in subn[n]]) + 1
+      stack = [n]
+      while stack:
+        current = stack[-1]
+        if current not in subn:
+          mem[current] = 0
+          stack.pop(-1)
+          continue
+        if current not in mem:
+          max_d = -1
+          for _n in subn[current]:
+            if _n not in mem:
+              stack.append(_n)
+            else:
+              max_d = max(max_d, mem[_n])
+          if max_d > -1:
+            mem[current] = max_d +1
+            stack.pop(-1)
+        else:
+          stack.pop(-1)
       return mem[n]
 
     n2d = dict()
@@ -100,6 +114,9 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
       distance += (self.node2X[k] - other.node2X[k]) ** 2
     return distance
 
+  def norm(self, other):
+    return self - other
+
   def _cls_setstate(self, state):
     super(GraphLayoutIndividual, self)._cls_setstate(state)
     self.depth2edges = dict(self.attr[self.attr_D2E])
@@ -145,14 +162,6 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
     return 1 / (1 + d)
 
   def layoutDistanceY(self):
-    # d = 0
-    # for e0, e1 in self.edges:
-    #   dist = abs(self.node2X[e0] - self.node2X[e1]) / self.distance
-    #   if e0 in self.real_nodes and e1 in self.real_nodes:
-    #     d += dist ** 2
-    #   elif dist > .55:
-    #     d += (dist - .55) ** 2
-    # return 1 / (1 + d)
     d = list()
     for e0, e1 in self.edges:
       dist = abs(self.node2X[e0] - self.node2X[e1]) / self.distance
@@ -183,7 +192,7 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
     else:
       for n, x in result.node2X.items():
         if random() < prob:
-          result.node2X[n] = result.node2X[n] + (random() - .5) * self.distance
+          result.node2X[n] = result.node2X[n] + round((random() - .5) / .25) * .5 * self.distance
     result._id_name = self.getNewName()
     return [result]
 
@@ -201,7 +210,8 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
     result.node2X = dict()
     for n in self.node2X.keys():
       if random() < .5:
-        result.node2X[n] = self.node2X[n] + (other.node2X[n] - self.node2X[n]) / 2
+        result.node2X[n] = self.node2X[n] + \
+                           round((other.node2X[n] - self.node2X[n]) * 2 / self.distance) * self.distance / 2
       else:
         if random() < .5:
           result.node2X[n] = self.node2X[n]
@@ -216,16 +226,15 @@ class GraphLayoutIndividual(IndividualInterface, Mutation.Interface, Recombinati
     if hasattr(self, '_fitness') and self._fitness:
       return self._fitness
     elif self.metrics:
-      # m_l = len(self.metrics)
-      # weight_f = 1 / sum([self.metric_weights.get(key, 1 / m_l) for key in self.metrics.keys()])
-      # self._fitness = sum([self.metric_weights.get(key, 1 / m_l) * weight_f * v for key, v in self.metrics.items()])
-
       self._fitness = 1
       for v in self.metrics.values():
         self._fitness *= v
-
-      # m_l = len(self.metrics)
-      # self._fitness = sum([v ** 2 for v in self.metrics.values()]) / m_l
       return self._fitness
     else:
       return -.1
+
+  def build_instance(self, nn_framework):
+    pass
+
+  def train_instance(self, nn_framework):
+    return dict()

@@ -1,44 +1,19 @@
-import math
-from random import random, choice
-from random import sample
-from typing import Tuple, List, Dict, Set
-
-from LAMARCK_ML.architectures.functions.interface import Function
-from LAMARCK_ML.architectures.variables import Variable
-from LAMARCK_ML.architectures.variables.initializer import *
+from LAMARCK_ML.architectures.functions.implementations import Dense
 from LAMARCK_ML.architectures.variables.regularisation import *
-from LAMARCK_ML.data_util import DimNames, TypeShape, IOLabel
-from LAMARCK_ML.data_util.dataType import \
-  DHalf, \
-  DFloat, \
-  DDouble, \
-  DInt64, \
-  DInt32, \
-  DInt16, \
-  DInt8
+from LAMARCK_ML.data_util import TypeShape, IOLabel, DimNames
+from LAMARCK_ML.architectures.variables.initializer import *
+from LAMARCK_ML.architectures.variables import Variable
 from LAMARCK_ML.data_util.shape import Shape
-from LAMARCK_ML.reproduction.methods import Mutation
-from LAMARCK_ML.metrics.implementations import FlOps, Parameters, Nodes
+from typing import Dict, Tuple, List
+from random import sample
+import math
 
 
-class Dense(Function,
-            Mutation.Interface,
-            FlOps.Interface,
-            Parameters.Interface,
-            Nodes.Interface,
-            ):
-  # IOLabel.DENSE_OUT = 'DENSE_OUT'
+class BiasLessDense(Dense):
   IOLabel.DENSE_OUT = 'DATA_OUT'
-  # IOLabel.DENSE_IN = 'DENSE_IN'
   IOLabel.DENSE_IN = 'DATA_IN'
-  allowedTypes = [DFloat, DDouble, DHalf, DInt8, DInt16, DInt32, DInt64]
-  _DF_INPUTS = [IOLabel.DENSE_IN]
 
-  arg_UNITS = 'units'
-  arg_IN_UNITS = 'in_units'
-  arg_OUT_NAMED_TYPE_SHAPES = 'outTypeShape'
-
-  __min_f = .5
+  __min_f = .01
   __max_f = 1.5
 
   @classmethod
@@ -60,9 +35,6 @@ class Dense(Function,
       invalid_dim = False
       for _dim in nts.shape.dim:
         target_size = target_shape[_dim.name]
-        # if _dim.name == DimNames.WIDTH or \
-        #     _dim.name == DimNames.HEIGHT or \
-        #     _dim.name == DimNames.CHANNEL or \
         if _dim.name == DimNames.UNITS:
           lower_border = max(math.floor(_dim.size * cls.__min_f), (min(2, target_size)
                                                                    if target_size is not None else 2))
@@ -75,8 +47,7 @@ class Dense(Function,
             pool.remove(target_size)
             pool = sample(pool, k=min(max(max_possibilities - len(border_pool) - 1, 0), len(pool))) + [target_size]
           pool = pool + border_pool
-        elif _dim.name == DimNames.BATCH:  # or \
-          # _dim.name == DimNames.TIME:
+        elif _dim.name == DimNames.BATCH:
           pool = [_dim.size]
         else:
           invalid_dim = True
@@ -113,10 +84,8 @@ class Dense(Function,
     outUnits = out_nts.shape.units
 
     possibleKernels = []
-    possibleBias = []
     if variable_pool is not None:
       possibleKernels = [v for v in variable_pool.get(cls.__name__ + '|kernel', []) if v.shape == (inUnits, outUnits)]
-      possibleBias = [v for v in variable_pool.get(cls.__name__ + '|bias', []) if v.shape == (outUnits,)]
     _dict = {cls.arg_ATTRIBUTES: {cls.arg_UNITS: outUnits,
                                   cls.arg_OUT_NAMED_TYPE_SHAPES: {out_label: out_nts},
                                   cls.arg_IN_UNITS: inUnits},
@@ -124,91 +93,25 @@ class Dense(Function,
                [(l_in, (l_out, id_name)) for l_in, (l_out, _, id_name) in input_dict.items()]),
              }
 
-    amount_ = len(possibleBias) + len(possibleKernels)
-    init_ = Constant()
-    reg_ = NoRegularisation()
+    amount_ = len(possibleKernels)
     prob_ = 0
     if amount_ > 0:
       prob_ = 1 / 2 / amount_
 
     _init = [GlorotUniform()]
-    _reg = [NoRegularisation()]
+    _reg = [L2()]
     _amount = len(_init) * len(_reg)
     _prob = 1 / 2 / _amount if amount_ > 0 else 1 / _amount
-    return ([{**_dict, **{cls.arg_VARIABLES: [k, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
-                                                             Variable.arg_TRAINABLE: True,
-                                                             Variable.arg_NAME: cls.__name__ + '|bias',
-                                                             Variable.arg_SHAPE: (outUnits,),
-                                                             Variable.arg_INITIALIZER: init_,
-                                                             Variable.arg_REGULARISATION: reg_
-                                                             })]}} for k in possibleKernels] +
-            [{**_dict, **{cls.arg_VARIABLES: [b, Variable(**{Variable.arg_DTYPE: out_nts.dtype,
-                                                             Variable.arg_TRAINABLE: True,
-                                                             Variable.arg_NAME: cls.__name__ + '|kernel',
-                                                             Variable.arg_SHAPE: (inUnits, outUnits),
-                                                             Variable.arg_INITIALIZER: init_,
-                                                             Variable.arg_REGULARISATION: reg_,
-                                                             })]}} for b in possibleBias] +
+    return ([{**_dict, **{cls.arg_VARIABLES: [k]}} for k in possibleKernels] +
             [{**_dict, **{cls.arg_VARIABLES: [Variable(**{Variable.arg_DTYPE: out_nts.dtype,
                                                           Variable.arg_TRAINABLE: True,
                                                           Variable.arg_NAME: cls.__name__ + '|kernel',
                                                           Variable.arg_SHAPE: (inUnits, outUnits),
                                                           Variable.arg_INITIALIZER: _init_,
                                                           Variable.arg_REGULARISATION: _reg_}),
-                                              Variable(**{Variable.arg_DTYPE: out_nts.dtype,
-                                                          Variable.arg_TRAINABLE: True,
-                                                          Variable.arg_NAME: cls.__name__ + '|bias',
-                                                          Variable.arg_SHAPE: (outUnits,),
-                                                          Variable.arg_INITIALIZER: _init_,
-                                                          Variable.arg_REGULARISATION: _reg_})
                                               ]}} for _init_ in _init for _reg_ in _reg]), \
            [prob_ for _ in range(amount_)] + \
            [_prob for _ in range(_amount)]
-
-  def __init__(self, **kwargs):
-    super(Dense, self).__init__(**kwargs)
-    if not (isinstance(self.attr[self.arg_OUT_NAMED_TYPE_SHAPES], dict) and
-            all([isinstance(nts, TypeShape) and isinstance(label, str) for label, nts in
-                 self.attr[self.arg_OUT_NAMED_TYPE_SHAPES].items()])):
-      raise Exception('Wrong output TypeShapes!')
-
-  @property
-  def outputs(self) -> Set[TypeShape]:
-    return self.attr[self.arg_OUT_NAMED_TYPE_SHAPES]
-
-  def mutate(self, prob, variable_pool=None):
-    def resetVariable(v):
-      v.value = None
-      v.trainable = True
-      return v
-
-    def keepTraining(v):
-      v.trainable = True
-      return v
-
-    def replaceVariable(v):
-      variable = choice(
-        [_v for _v in variable_pool.get(self.__name__ + '|kernel', []) if v.shape == _v.shape])
-      return variable
-
-    functions = [resetVariable, keepTraining]
-    if variable_pool is not None:
-      functions.append(replaceVariable)
-    result = Dense.__new__(Dense)
-    result.__setstate__(self.get_pb())
-    new_variables = list()
-    changed = False
-    for _v in result.variables:
-      if random() < prob:
-        new_variable = choice(functions)(_v)
-        changed = True
-      else:
-        new_variable = _v
-      new_variables.append(new_variable)
-    result.variables = new_variables
-    if changed:
-      result._id_name = Dense.getNewName()
-    return result
 
   @classmethod
   def min_transform(cls, nts):
@@ -240,16 +143,5 @@ class Dense(Function,
         return None
     return result
 
-  def flops_per_sample(self):
-    return self.attr[self.arg_IN_UNITS] * self.attr[self.arg_UNITS] \
-           + self.attr[self.arg_UNITS]  # ReLU
-
   def parameters(self):
-    return self.attr[self.arg_IN_UNITS] * self.attr[self.arg_UNITS] + self.attr[self.arg_UNITS]
-
-  def nodes(self):
-    return self.attr[self.arg_UNITS]
-
-  @property
-  def inputLabels(self) -> List[str]:
-    return self._DF_INPUTS
+    return self.attr[self.arg_IN_UNITS] * self.attr[self.arg_UNITS]

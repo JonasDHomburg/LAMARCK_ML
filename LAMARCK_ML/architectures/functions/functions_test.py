@@ -13,7 +13,7 @@ from LAMARCK_ML.data_util import DimNames as DN, IOLabel, Shape, BaseType, DDoub
 from LAMARCK_ML.architectures.neuralNetwork import NeuralNetwork
 
 
-@unittest.skipIf((os.environ.get('test_fast', False) in {'True','true', '1'}), 'time consuming')
+@unittest.skipIf((os.environ.get('test_fast', False) in {'True', 'true', '1'}), 'time consuming')
 class TestFunction(unittest.TestCase):
   def allTypes(self, _type=BaseType):
     for cls in _type.__subclasses__(_type):
@@ -34,7 +34,7 @@ class TestFunction(unittest.TestCase):
     for c in classes:
       for i in range(random.randint(1, 10)):
         obj = c(variables=[self.randomVariable() for _ in range(random.randint(1, 3))], input_mapping={}, dtype=DDouble)
-        names.append(obj._name)
+        names.append(obj._id_name)
     keys = [k for k in Function.usedNames.keys()]
     keys.sort()
     names.sort()
@@ -94,8 +94,6 @@ class TestFunction(unittest.TestCase):
     new_obj = Function.__new__(Function)
     new_obj.__setstate__(pb)
     self.assertNotEqual(obj, new_obj)
-
-  #   TODO: extend test to check notequal for other types
 
   def test_subclassException(self):
     cls = TestFunction.dummySubClass
@@ -418,3 +416,81 @@ class TestSubFunctions(unittest.TestCase):
         new_flatten.__setstate__(state)
         self.assertEqual(_flatten, new_flatten)
         self.assertIsNot(_flatten, new_flatten)
+
+  def test_Softmax(self):
+    IOLabel.DUMMY1 = 'DUMMY1'
+    IOLabel.DUMMY2 = 'DUMMY2'
+    shape0 = Shape((DN.BATCH, -1),
+                   (DN.WIDTH, 8),
+                   (DN.HEIGHT, 8),
+                   (DN.CHANNEL, 32))
+    shape1 = Shape((DN.BATCH, -1),
+                   (DN.UNITS, 10))
+    output0 = TypeShape(DDouble, shape0)
+    output1 = TypeShape(DDouble, shape1)
+    input0 = {IOLabel.DUMMY1: output0}
+    input1 = {IOLabel.DUMMY1: output1}
+    pos0 = list(Softmax.possible_output_shapes(
+      input_ntss=input0,
+      target_output=output0,
+      is_reachable=lambda x, y: NeuralNetwork.reachable(x, y, 1, {Softmax})
+    ))
+    self.assertTrue(any([output0 in out.values() for _, out, _ in pos0]))
+    self.assertTrue(all([len(remaining) == 0 for remaining, _, _ in pos0]))
+    self.assertTrue(all([IOLabel.SOFTMAX_IN in mapping and mapping[IOLabel.SOFTMAX_IN] == IOLabel.DUMMY1
+                         for _, _, mapping in pos0]))
+    pos1 = list(Softmax.possible_output_shapes(
+      input_ntss=input1,
+      target_output=output1,
+      is_reachable=lambda x, y: NeuralNetwork.reachable(x, y, 1, {Softmax})
+    ))
+    self.assertTrue(any([output1 in out.values() for _, out, _ in pos1]))
+    self.assertTrue(all([len(remaining) == 0 for remaining, _, _ in pos1]))
+    self.assertTrue(all([IOLabel.SOFTMAX_IN in mapping and mapping[IOLabel.SOFTMAX_IN] == IOLabel.DUMMY1
+                         for _, _, mapping in pos1]))
+
+    dummyDF = TestSubFunctions.DummyDF()
+    dummyDF._outputs = {IOLabel.DUMMY1: TypeShape(DDouble, shape0)}
+    for _, out, _ in pos0:
+      for parameters in Softmax.generateParameters(
+          input_dict={IOLabel.SOFTMAX_IN: (IOLabel.DUMMY1, dummyDF.outputs, dummyDF.id_name)},
+          expected_outputs={IOLabel.DUMMY2: output0},
+          variable_pool={},
+      )[0]:
+        _softmax = Softmax(**parameters)
+        pb = _softmax.get_pb()
+        self.assertIsNotNone(pb)
+        state = _softmax.__getstate__()
+        self.assertIsNotNone(state)
+
+        new_softmax = Softmax.__new__(Softmax)
+        new_softmax.__setstate__(pb)
+        self.assertEqual(_softmax, new_softmax)
+        self.assertIsNot(_softmax, new_softmax)
+
+        new_softmax = Softmax.__new__(Softmax)
+        new_softmax.__setstate__(state)
+        self.assertEqual(_softmax, new_softmax)
+        self.assertIsNot(_softmax, new_softmax)
+
+    for _, out, _ in pos1:
+      for parameters in Softmax.generateParameters(
+          input_dict={IOLabel.SOFTMAX_IN: (IOLabel.DUMMY1, dummyDF.outputs, dummyDF.id_name)},
+          expected_outputs={IOLabel.DUMMY2: output1},
+          variable_pool={}
+      )[0]:
+        _softmax = Softmax(**parameters)
+        pb = _softmax.get_pb()
+        self.assertIsNotNone(pb)
+        state = _softmax.__getstate__()
+        self.assertIsNotNone(state)
+
+        new_softmax = Softmax.__new__(Softmax)
+        new_softmax.__setstate__(pb)
+        self.assertEqual(_softmax, new_softmax)
+        self.assertIsNot(_softmax, new_softmax)
+
+        new_softmax = Softmax.__new__(Softmax)
+        new_softmax.__setstate__(state)
+        self.assertEqual(_softmax, new_softmax)
+        self.assertIsNot(_softmax, new_softmax)

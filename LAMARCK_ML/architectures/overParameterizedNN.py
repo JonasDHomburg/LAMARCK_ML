@@ -15,13 +15,15 @@ from LAMARCK_ML.architectures.variables import Variable
 from LAMARCK_ML.data_util import TypeShape, IOLabel
 from LAMARCK_ML.data_util.attribute import attr2pb, pb2attr, value2pb, pb2val
 from LAMARCK_ML.metrics.implementations import FlOps, Parameters
-from LAMARCK_ML.reproduction.methods import Mutation, Recombination
-from LAMARCK_ML.utils import SortingClass, CompareClass
+from LAMARCK_ML.reproduction.methods import Mutation, Recombination, RandomStep
+from LAMARCK_ML.utils.sortingClass import SortingClass
+from LAMARCK_ML.utils.compareClass import CompareClass
 
 
 class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
                                      Mutation.Interface,
                                      Recombination.Interface,
+                                     RandomStep.Interface,
                                      FlOps.Interface,
                                      Parameters.Interface):
   arg_INPUTS = 'inputs'
@@ -74,7 +76,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
       max_depth=self.attr[self.arg_MAX_DEPTH],
       max_recursion_depth=self.attr[self.arg_MAX_BRANCH]
     )
-    self._DF_INPUTS = set(self.input_mapping.keys())
     self.build_network(
       data_flow_inputs=input_df_obj,
       blueprint=blueprint
@@ -101,8 +102,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
           [v for v in self.variable_pool if set(self.variable_pool.get(v)) == set(other.variable_pool.get(v))])
         and len(self.output_mapping) == len(other.output_mapping) == len(
           [True for om in self.output_mapping if om in other.output_mapping])
-        and len(self._DF_INPUTS) == len(other._DF_INPUTS) == len(
-          [True for dfi in self._DF_INPUTS if dfi in other._DF_INPUTS])
         and len(self.functions) == len(other.functions) == len(
           [True for f in self.functions if f in other.functions])
         and len(self.attr) == len(other.attr) == len(
@@ -117,7 +116,7 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     return False
 
   def __getstate__(self):
-    self.get_pb().SerializeToString()
+    return self.get_pb().SerializeToString()
 
   def __setstate__(self, state):
     def build_function(pb):
@@ -136,7 +135,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     self.function_cls = [Function.getClassByName(f_cls) for f_cls in _nn.function_cls]
     self.output_targets = dict([pb2val(v) for v in _nn.output_ntss.v])
     self._inputs = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.input_mapping])
-    self._DF_INPUTS = set(self._inputs.keys())
     self.output_mapping = dict([(ioMP.in_label, (ioMP.out_label, ioMP.df_id_name)) for ioMP in _nn.output_mapping])
     self.functions = [build_function(_f) for _f in _nn.functions]
     self.variable_pool = dict()
@@ -581,23 +579,35 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
       else:
         f_to_delete.add(f)
 
-    connectivity = dict()
+    edges_to_delete = list()
     for k in list(self.meta_edges.keys()):
       (_, f_id0), _, (_, f_id1) = k
       if (f_id1 in f_to_delete) or (f_id0 in f_to_delete):
-        del self.meta_edges[k]
-      else:
-        n0, l, n1 = k
-        connectivity[n1] = connectivity.get(n1, 0) + 1
+        edges_to_delete.append(k)
 
-    for k in list(self.meta_edges.keys()):
-      (d0, f_id0), _, (d1, f_id1) = k
-      if d0 != 0 and connectivity.get((d0, f_id0), 0) < 1:
-        del self.meta_edges[k]
+    for (d, _id_), _, _ in self.meta_edges.keys():
+      if sum([1 for _, _, (_, k) in self.meta_edges.keys() if k == _id_]) < 1 and d > 0:
+        expanding = [k for k in self.meta_edges.keys() if k[0][1] == _id_]
+        edges_to_delete.extend(expanding)
+
+    while edges_to_delete:
+      while edges_to_delete:
+        e = edges_to_delete.pop(0)
+        self.meta_edges.pop(e, None)
+        _, _, (_, _id_) = e
+        if _id_ in self.meta_functions:
+          f_to_delete.add(_id_)
+        if sum([1 for _, _, (_, k) in self.meta_edges.keys() if k == _id_]) < 1:
+          expanding = [k for k in self.meta_edges.keys() if k[0][1] == _id_]
+          edges_to_delete.extend(expanding)
+      for (d, _id_), _, _ in self.meta_edges.keys():
+        if sum([1 for _, _, (_, k) in self.meta_edges.keys() if k == _id_]) < 1 and d > 0:
+          expanding = [k for k in self.meta_edges.keys() if k[0][1] == _id_]
+          edges_to_delete.extend(expanding)
 
     for f_id in f_to_delete:
-      del self.meta_functions[f_id]
-      del self.meta_function_consciousness[f_id]
+      self.meta_functions.pop(f_id, None)
+      self.meta_function_consciousness.pop(f_id, None)
 
   @property
   def outputs(self) -> Set[TypeShape]:
@@ -662,15 +672,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
       elif target_ts in self.meta_functions:
         fID2depth[target_ts] = depth
 
-      # depth, target_ts = _from
-      # if isinstance(target_ts, TypeShape):
-      #   ts_set = depth2ts.get(depth, set())
-      #   ts_set.add(target_ts)
-      #   depth2ts[depth] = ts_set
-      #   nodes[target_ts] = nodes.get(target_ts, []) + [_from]
-      # elif target_ts in self.meta_functions:
-      #   fID2depth[target_ts] = depth
-
     outputTS = dict()
     ts2explore = list()
     for out_id, target_ts in self.output_targets.items():
@@ -702,7 +703,9 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
       if ts_node in used_nodes:
         continue
       used_nodes.add(ts_node)
+      # get all edges to ts_node
       possible_edges = backward_edges[ts_node]
+      # get respective edges from meta_graph
       sorted_edges = [sc[0] for sc in
                       sorted([(e + (ts_node,), SortingClass(obj=self.meta_edges[e + (ts_node,)],
                                                             cmp=self.cmp.greaterThan))
@@ -713,6 +716,7 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
       sel_prob[-2] = sel_prob[-2] / p_c
       sel_prob[-1] = prob
       sel_prob = sel_prob / sel_prob.sum()
+      # select one edge, TODO None
       selected_edge_f2ts = np.random.choice(sorted_edges + [None], 1, replace=False, p=sel_prob)[0]
       replaced = False
       if selected_edge_f2ts is None:
@@ -807,13 +811,16 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
             is_reachable=lambda x, y: OverParameterizedNeuralNetwork.reachable(x, y, 1, self.function_cls),
             function_pool=self.function_cls,
             recursion_depth=1)
+          # get a new function
           p1_child = next(p1_children, None)
           path_created = False
+          # try to build function
           while p1_child is not None and not path_created:
             p1_mapping, p1_f, p1_remaining_in, p1_in_out_mapping = p1_child
             p1_edges = [(label, (depth, p1_inputs[_key])) for label, _key in p1_in_out_mapping.items()]
             p1_found = True
             try:
+              # search possible inputs for the remaining inputs
               for _label, _ts in p1_remaining_in.items():
                 try:
                   for d in range(min(depth, orig_depth - 1), -1, -1):
@@ -828,6 +835,7 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
             if not p1_found:
               p1_child = next(p1_children, None)
               continue
+            # find second function
             p2_children = OverParameterizedNeuralNetwork.children_iter(
               input_ntss=p1_mapping,
               target_output=target_ts,
@@ -836,12 +844,14 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
               recursion_depth=1)
             p2_child = next(p2_children, None)
             p2_found = False
+            # try to build function
             while p2_child is not None and not path_created:
               p2_mapping, p2_f, p2_reamining_in, p2_in_out_mapping = p2_child
               p2_edges = [(label, (-depth - 1, p1_mapping[_key])) for label, _key in p2_in_out_mapping.items()]
               p2_ts2explore = set()
               p2_found = True
               try:
+                # find possible inputs for remaining inputs
                 for _label, _ts in p2_reamining_in.items():
                   try:
                     for d in range(min(depth + 1, orig_depth - 1), -1, -1):
@@ -858,9 +868,13 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
                 p2_child = next(p2_children, None)
                 continue
               path_created = True
+            # tried to find second function
             if not p2_found:
               p1_child = next(p1_children, None)
+          # tried to find first function
+
           if path_created:
+            # new functions p1_f and p2_f found
             params, poss = p1_f.generateParameters(
               input_dict={label: ('none', {'none': ts}, 'none') for label, (_, ts) in p1_edges},
               expected_outputs=p1_mapping,
@@ -898,9 +912,10 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
             for label, node in p2_edges:
               used_meta_edges[node, label, p2_f_node] = None
             ts2explore.extend(p2_ts2explore)
-
           else:
+            # failed to find two new functions
             replaced = False
+
         if not replaced:
           used_meta_edges[selected_edge_f2ts] = self.meta_edges[selected_edge_f2ts]
           for e in sorted_edges_ts2f:
@@ -931,14 +946,13 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
                                 for n_ts, l_in in used_backward[_from] for n_f, l_out in used_backward.get(n_ts)}
         real_functions[f_id] = r_func
 
+    # build result
     result = object.__new__(OverParameterizedNeuralNetwork)
-    # result.__setstate__(self.get_pb())
     result._id_name = self.id_name
     result.function_cls = list(self.function_cls)
     result.output_targets = {k: v for k, v in self.output_targets.items()}
     result._inputs = {k: (v0, v1) for k, (v0, v1) in self._inputs.items()}
-    result._DF_INPUTS = set(result._inputs.keys())
-    result.output_mapping = {k: (v0, v1) for k, (v0, v1) in self.output_mapping.items()}
+    result.output_mapping = dict()
     result.variable_pool = dict()
     result.attr = dict(self.attr)
     result.meta_edges = {k: dict(d) if isinstance(d, dict) else None for k, d in self.meta_edges.items()}
@@ -949,7 +963,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     result.cmp = self.cmp
 
     id2function = {f.id_name: f for f in result.functions}
-
     mem = dict()
 
     def f2depth(function):
@@ -976,6 +989,7 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
                              for _, id_name in id2function[function].input_mapping.values()]) + 1
       return mem[function]
 
+    # get all already existing functions to rename those
     rename = dict()
     for f in result.functions:
       rename[f.id_name] = f.id_name
@@ -985,10 +999,6 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
         if any([(f_node, label, (depth, ts)) not in result.meta_edges for label, ts in f.outputs.items()]):
           new_id = f.getNewName()
           rename[f.id_name] = new_id
-          meta_function = result.meta_functions.get(f.id_name)
-          new_meta = meta_function.__copy__()
-          new_meta._name = new_id
-          new_meta_functions[new_id] = new_meta
 
     network_inputs = {id_name: (out_label, ts) for out_label, ts, id_name in result.input_mapping.values()}
     for f in result.functions:
@@ -1015,13 +1025,18 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
         new_mapping[in_label] = (out_label, rename.get(id_name, id_name))
       f.input_mapping = new_mapping
 
-      f._name = rename[f.id_name]
+      f._id_name = rename[f.id_name]
 
-    consciousness = self.attr[self.arg_CONSCIOUSNESS]
-    for key, f in new_meta_functions.items():
-      result.meta_functions[f.id_name] = f
-      result.meta_function_consciousness[f.id_name] = consciousness
+    # add new meta functions and set consciousness
+    for f in result.functions:
+      if f.id_name not in result.meta_functions:
+        meta_function = f.__copy__()
+        meta_function.input_mapping = {}
+        result.meta_functions[f.id_name] = meta_function
+      if f.id_name not in result.meta_function_consciousness:
+        result.meta_function_consciousness[f.id_name] = 1
 
+    # update output_mapping to renaming
     result.output_mapping = {out_id: (_label, rename[_from[1]])
                              for out_id, outTS in outputTS.items()
                              for _from, _label in used_backward[outTS]}
@@ -1036,12 +1051,9 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     result.function_cls = set(self.function_cls)
     result.output_targets = dict([(label, value.__copy__()) for label, value in self.output_targets.items()])
     result._inputs = dict(self._inputs)
-    result._DF_INPUTS = set(self._DF_INPUTS)
     result.output_mapping = dict(self.output_mapping)
     result.functions = list()
     for _f in self.functions:
-      # new_f = Function.__new__(Function)
-      # new_f.__setstate__(_f.get_pb())
       new_f = _f.__copy__()
       result.functions.append(new_f)
     result.variable_pool = dict([(key, list(value_l)) for key, value_l in self.variable_pool.items()])
@@ -1065,7 +1077,7 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
 
         takeOther = self.cmp.greaterThan(o_quality, r_quality)
         if takeOther:
-          result.meta_edges[e][self.meta_QUALITY] = o_quality
+          result.meta_edges[e] = dict(o_quality) if o_quality is not None else None
         _, _, _id = e
         if _id in result.meta_functions and takeOther:
           result.meta_functions[_id] = other.meta_functions[_id].__copy__()
@@ -1088,6 +1100,9 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     #   result.meta_function_consciousness[f] = max(result.meta_function_consciousness.get(f, 0), c)
 
     return [result]
+
+  def step(self, step_size):
+    return self.mutate(step_size)
 
   def update_state(self, *args, **kwargs):
     if not hasattr(self, 'cmp') or not isinstance(self.cmp, CompareClass):
@@ -1125,5 +1140,9 @@ class OverParameterizedNeuralNetwork(ArchitectureInterface, DataFlow,
     if isinstance(other, self.__class__):
       other_ids = set([f.id_name for f in other.functions])
       self_ids = set([f.id_name for f in self.functions])
-      return len(other_ids.union(self_ids))-len(other_ids.intersection(self_ids))
+      return len(other_ids.union(self_ids)) - len(other_ids.intersection(self_ids))
     return -1
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return list(self._inputs.keys())

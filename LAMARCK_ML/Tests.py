@@ -12,6 +12,8 @@ from LAMARCK_ML.architectures.neuralNetwork_test import \
   TestNeuralNetwork
 from LAMARCK_ML.architectures.overParameterizedNN_test import \
   TestOverParameterizedNN
+from LAMARCK_ML.architectures.weightAgnosticNN_test import \
+  TestWeightAgnosticNN
 from LAMARCK_ML.architectures.variables.initializer.initializer_test import \
   TestInitializer
 from LAMARCK_ML.architectures.variables.regularisation.regularisation_test import \
@@ -67,6 +69,7 @@ if __name__ == '__main__':
 
     TestNeuralNetwork,
     TestOverParameterizedNN,
+    TestWeightAgnosticNN,
 
     TestLoss,
 

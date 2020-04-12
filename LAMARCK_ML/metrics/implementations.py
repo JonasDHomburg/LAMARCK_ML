@@ -8,14 +8,14 @@ class Accuracy(MetricInterface):
   ID = 'ACC'
 
   class Interface:
-    def accuracy(self):
+    def accuracy(self, obj):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
-    if isinstance(framework, self.Interface):
-      return framework.accuracy()
     if isinstance(individual, self.Interface):
-      return individual.accuracy()
+      return individual.accuracy(framework)
+    if isinstance(framework, self.Interface):
+      return framework.accuracy(individual)
     return -.1
 
 
@@ -30,10 +30,10 @@ class FlOps(MetricInterface):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
-    if isinstance(framework, self.Interface):
-      return framework.flops_per_sample()
     if isinstance(individual, self.Interface):
       return individual.flops_per_sample()
+    if isinstance(framework, self.Interface):
+      return framework.flops_per_sample()
     return -.1
 
 
@@ -45,10 +45,10 @@ class Parameters(MetricInterface):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
-    if isinstance(framework, self.Interface):
-      return framework.parameters()
     if isinstance(individual, self.Interface):
       return individual.parameters()
+    if isinstance(framework, self.Interface):
+      return framework.parameters()
     return -.1
 
 
@@ -60,10 +60,10 @@ class MemoryMetric(MetricInterface):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
-    if isinstance(framework, self.Interface):
-      return framework.memory()
     if isinstance(individual, self.Interface):
       return individual.memory()
+    if isinstance(framework, self.Interface):
+      return framework.memory()
     return -.1
 
 
@@ -75,23 +75,25 @@ class TimeMetric(MetricInterface):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
-    if isinstance(framework, self.Interface):
-      return framework.time()
     if isinstance(individual, self.Interface):
       return individual.time()
+    if isinstance(framework, self.Interface):
+      return framework.time()
     return -.1
 
 
-class NodesInNetwork(MetricInterface):
+class Nodes(MetricInterface):
   ID = 'NODES'
 
   class Interface:
-    def nodes_in_network(self):
+    def nodes(self):
       raise NotImplementedError()
 
   def evaluate(self, individual, framework):
     if isinstance(individual, self.Interface):
-      return individual.nodes_in_network()
+      return individual.nodes()
+    if isinstance(framework, self.Interface):
+      return framework.nodes()
     return -.1
 
 
@@ -131,4 +133,19 @@ class LayoutDistanceY(MetricInterface):
   def evaluate(self, individual, framework):
     if isinstance(individual, self.Interface):
       return individual.layoutDistanceY()
+    return -.1
+
+
+class CartesianFitness(MetricInterface):
+  ID = 'CF'
+
+  class Interface:
+    def cartesianFitness(self):
+      raise NotImplementedError()
+
+  def evaluate(self, individual, framework):
+    if isinstance(individual, self.Interface):
+      return individual.cartesianFitness()
+    if isinstance(framework, self.Interface):
+      return framework.cartesianFitness()
     return -.1

@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Dict, Tuple, Set
+from typing import Dict, Tuple, Set, List
 
 from LAMARCK_ML.architectures.dataFlow import DataFlow
 from LAMARCK_ML.architectures.losses.Loss_pb2 import LossProto
@@ -17,11 +17,11 @@ class Reduce(Enum):
 
 
 class LossInterface(DataFlow):
+  # TODO: is this class needed as DataFlow child class?
   IOLabel.PREDICTION = 'PREDICTION'
-  IOLabel.TARGET = 'TARGET'
   arg_REDUCE = 'reduce'
 
-  _DF_INPUTS = {IOLabel.PREDICTION, IOLabel.TARGET}
+  _DF_INPUTS = [IOLabel.PREDICTION, IOLabel.TARGET]
   _usedNames = dict()
 
   def __init__(self, **kwargs):
@@ -87,9 +87,12 @@ class LossInterface(DataFlow):
 
   @property
   def inputs(self) -> Dict[IOLabel, Tuple[IOLabel, str]]:
-    # TODO: implement this
     pass
 
   @property
   def id_name(self) -> str:
     return self._id_name
+
+  @property
+  def inputLabels(self) -> List[str]:
+    return self._DF_INPUTS
