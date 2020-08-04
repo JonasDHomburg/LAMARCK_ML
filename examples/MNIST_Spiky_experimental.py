@@ -9,7 +9,6 @@ import matplotlib.patches as patches
 from LAMARCK_ML.utils.stopGenerational import StopByNoProgress, StopByGenerationIndex
 from LAMARCK_ML.individuals import IndividualInterface, ClassifierIndividualOPACDG
 from LAMARCK_ML.data_util import IOLabel, DFloat, DimNames, Shape, TypeShape
-from LAMARCK_ML.utils.telegramNotifier_experimental import TelegramNotifier
 from LAMARCK_ML.utils.modelStateSaverLoader import ModelStateSaverLoader
 from LAMARCK_ML.reproduction import Mutation, Recombination, RandomStep
 from LAMARCK_ML.nn_framework.nvidia_tensorflow import NVIDIATensorFlow
@@ -118,7 +117,7 @@ def MNIST(dataDir, log_folder, token, functions):
     Recombination(**{Recombination.arg_LIMIT: 36}),
     # Recombination(**{Recombination.arg_LIMIT: 10}),
     RandomStep(**{RandomStep.arg_LIMIT: 36,
-    # RandomStep(**{RandomStep.arg_LIMIT: 10,
+                  # RandomStep(**{RandomStep.arg_LIMIT: 10,
                   RandomStep.arg_STEP_SIZE: .3,
                   RandomStep.arg_P: .8}),
 
@@ -138,11 +137,6 @@ def MNIST(dataDir, log_folder, token, functions):
       ModelStateSaverLoader.arg_FILE: dataDir + '/' + log_folder + '/model_state.pb',
     }),
     DSSqlite3(**{DSSqlite3.arg_FILE: dataDir + log_folder + '/history.db3'}),
-    # TelegramNotifier(**{
-    #   TelegramNotifier.arg_TOKEN: token,
-    #   TelegramNotifier.arg_USER_IDS: {111849723},
-    #   TelegramNotifier.arg_SELECTION: True,
-    #   TelegramNotifier.arg_NEA_DONE: True})
   ])
 
   if model.reset():
@@ -227,22 +221,6 @@ def get_best(logFolder, metric_file):
   for name, metrics in name_metrics:
     dummies.append(dummy(name, metrics))
 
-  # best = sorted([SortingClass(obj=d, cmp=ind_cmp) for d in dummies], reverse=True)[0].obj
-  # for b in sorted([SortingClass(obj=d, cmp=ind_cmp) for d in dummies], reverse=True):
-  #   found_merge = False
-  #   for f in dataSaver.get_individual_by_name(b.obj.name).network.functions:
-  #     if isinstance(f, Merge):
-  #       found_merge = True
-  #       break
-  #     print(f.id_name)
-  #   if found_merge:
-  #     best = b.obj
-  #     break
-
-  # for best in sorted([d for d in dummies if d.metrics[Nodes.ID]<=210], key=lambda x: x.metrics[Accuracy.ID], reverse=True):
-  #   if any([isinstance(f, Merge) for f in dataSaver.get_individual_by_name(best.name).network.functions]):
-  #     break
-
   best = sorted([d for d in dummies if d.metrics[Nodes.ID] <= 65], key=lambda x: x.metrics[Accuracy.ID], reverse=True)[
     0]
 
@@ -290,8 +268,6 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
     nodes = metrics[Nodes.ID]
     acc = metrics[Accuracy.ID]
     paretoA[nodes] = max(paretoA.get(nodes, 0), acc)
-    # if n == 'ClassifierIndividualOPACDG_1582859786.090028_498141415':
-    #   print(metrics)
   n0, ind0 = sorted([(n, d) for n, d in metricsA if d[Nodes.ID] <= 65], key=lambda x: x[1][Accuracy.ID], reverse=True)[
     0]
   ind1 = sorted([SortingClass(obj=dummy(n, d), cmp=ind_cmp) for n, d in metricsA], reverse=True)[0].obj
@@ -343,10 +319,10 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
   ax1.set_xlim([0, 2100])
   ax1.set_ylim([0, 1])
   ax1.set_title('Neurons-Accuracy Pareto', fontsize=16)
-  # ax1.set(xlabel='Neurons', ylabel='Accuracy')
   ax1.set_xlabel('Neurons', fontsize=14)
   ax1.set_ylabel('Accuracy', fontsize=14)
   ax1.tick_params(labelsize=10)
+  ax1.add_patch(patches.Rectangle((2, 0.9), 200, 0.097, fill=False, edgecolor='r', linewidth=2))
 
   ax2.plot(list(paretoA.keys()), list(paretoA.values()), 'x', label='Test Acc as seen by GA')
   ax2.plot(list(paretoA_.keys()), list(paretoA_.values()), label='Test Acc as seen by GA')
@@ -365,6 +341,7 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
   stack = list(ind.network.functions)
   exported = {'MNIST'}
   y = 0.215
+  y_min = y
   while stack:
     f = stack.pop(0)
     if not all([l in exported for _, l in f.inputs.values()]):
@@ -375,20 +352,21 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
     ax1.text(400, y, str(units), fontsize=12,
              bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
              ha='center')
-    # y += 0.045
     y += 0.065
   ax1.text(400, y, 'SoftMax', fontsize=12,
            bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
            ha='center')
-  ax1.plot([xs[-1]-10,400],[ys[-1]-.02,y+0.05],'-', color='#ff3000')
+  ax1.plot([xs[-1] - 10, 400], [ys[-1] - .02, y + 0.05], '-', color='#ff3000')
+  ax1.text(330, (y + y_min) / 2, 'NAStop', ha='center', va='center', rotation=90)
 
-  ax2.text(25,0.95,'Input: 784', fontsize=12,
+  ax2.text(25, 0.95, 'Input: 784', fontsize=12,
            bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
            ha='center')
   ind = dataSaver.get_individual_by_name(n0)
   stack = list(ind.network.functions)
   exported = {'MNIST'}
   y = 0.957
+  y_min = y
   while stack:
     f = stack.pop(0)
     if not all([l in exported for _, l in f.inputs.values()]):
@@ -403,7 +381,8 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
   ax2.text(25, y, 'SoftMax', fontsize=12,
            bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
            ha='center')
-  ax2.plot([xs[0]-4,35],[ys[0]+0.001,0.973],'-',color='#ff3000')
+  ax2.plot([xs[0] - 4, 35], [ys[0] + 0.001, 0.973], '-', color='#ff3000')
+  ax2.text(15, (y + y_min) / 2, 'NAS63', ha='center', va='center', rotation=90)
 
   ax2.text(150, 0.92, 'Input: 784', fontsize=12,
            bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
@@ -412,6 +391,7 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
   stack = list(ind.network.functions)
   exported = {'MNIST'}
   y = 0.927
+  y_min = y
   while stack:
     f = stack.pop(0)
     if not all([l in exported for _, l in f.inputs.values()]):
@@ -426,12 +406,8 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
   ax2.text(150, y, 'SoftMax', fontsize=12,
            bbox={'boxstyle': 'round', 'facecolor': 'w', 'alpha': 0.5},
            ha='center')
-  ax2.plot([xs[1]+1, 150], [ys[1]-0.002, y+0.005], '-', color='#ff3000')
-
-  # ax1.add_patch(patches.Rectangle((100,0.05),500,0.05,
-  #                                 linewidth=1,
-  #                                 edgecolor='k',
-  #                                 facecolor='w'))
+  ax2.plot([xs[1] + 1, 150], [ys[1] - 0.002, y + 0.005], '-', color='#ff3000')
+  ax2.text(140, (y + y_min) / 2, 'NAS129', ha='center', va='center', rotation=90)
 
   plt.savefig('NAS_results.svg', format='svg')
   plt.savefig('NAS_results.pdf', format='pdf')
@@ -441,15 +417,14 @@ def get_pareto(metric_file_ga: str, metric_file_test: str, logFolder):
 
 
 if __name__ == '__main__':
-  logDir = '/media/data1/LAMARCK_DATA/'
-  # logDir = '/media/compute/homes/jhomburg/NAS_DATA/'
+  logDir = '/log/path'
   # MNIST(dataDir=logDir, log_folder='sequential', token='', functions=[BiasLessDense])
   # MNIST(dataDir=logDir, log_folder='shit2', token='', functions=[BiasLessDense])
   # MNIST(dataDir=logDir, log_folder='acyclicDAG', token='', functions=[BiasLessDense, Merge])
 
   # evaluate(logDir=logDir, log_folder='acyclicDAG',
   # evaluate(logDir=logDir, log_folder='sequential',
-  #          ga_metrics_f='ga_metrics.p', dataDir='/media/data/_Studium/LAMARCK_DATA/', test_metrics_f='test_metrics.p')
+  #          ga_metrics_f='ga_metrics.p', dataDir='/data/path', test_metrics_f='test_metrics.p')
 
   # ind = get_best(logFolder=logDir + '/sequential/', metric_file=logDir + '/sequential/ga_metrics.p')
   # export_hbp(ind, path_file=logDir + '/sequential_network_65.json')
